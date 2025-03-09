@@ -1,0 +1,258 @@
+package com.dpmg.patrimonio.services;
+
+import com.dpmg.patrimonio.exceptions.*;
+import com.dpmg.patrimonio.models.dtos.Patrimony.*;
+import com.dpmg.patrimonio.models.dtos.PatrimonyOtherSituation.FindAllPatrimonyOtherSituationDTO;
+import com.dpmg.patrimonio.models.dtos.PatrimonyOtherSituation.PatrimonyOtherSituationDTO;
+import com.dpmg.patrimonio.models.dtos.PatrimonyOtherSituation.SavePatrimonyOtherSituationDTO;
+import com.dpmg.patrimonio.models.dtos.shared.PaginatedResponseDTO;
+import com.dpmg.patrimonio.models.dtos.shared.ResponseDTO;
+import com.dpmg.patrimonio.models.dtos.shared.SaveDataDTO;
+import com.dpmg.patrimonio.models.entities.PatrimonyEntity;
+import com.dpmg.patrimonio.models.enums.PatrimonySituationEnum;
+import com.dpmg.patrimonio.repositories.PatrimonyRepository;
+import com.dpmg.patrimonio.utils.Messages;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
+import lombok.Data;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Data
+@Service
+public class PatrimonyService {
+    private final PatrimonyRepository patrimonyRepository;
+    private final InventoryControlService inventoryControlService;
+    private final HttpServletRequest request;
+
+    public ResponseDTO<List<UnitDTO>> findResponsibleUnitListByInventoryId(Long id) {
+        List<UnitDTO> unitList = patrimonyRepository.findResponsibleUnitListByInventoryId(id);
+        String message = unitList.isEmpty() ? Messages.EMPTY_LIST : Messages.SUCCESS_FETCH;
+        return new ResponseDTO<>(message, unitList);
+    }
+
+    private UnitDTO findUnitByInventoryIdAndUnitNumber(Long inventoryId, Long unitNumber) {
+        UnitDTO unit = patrimonyRepository.findFirstUnitByInventoryIdAndUnitNumber(inventoryId, unitNumber);
+
+        if (unit == null) {
+            throw new UnitNotFoundException();
+        }
+
+        return unit;
+    }
+
+    private void verifyIfExistsUnitByInventoryIdAndUnitNumber(Long inventoryId, Long unitNumber) {
+        if (Boolean.FALSE.equals(patrimonyRepository.existsUnitByInventoryIdAndUnitNumber(inventoryId, unitNumber))) {
+            throw new UnitNotFoundException();
+        }
+    }
+
+    public PaginatedResponseDTO<PatrimonyDTO> findAll(FindAllPatrimonyListDTO dto) {
+        Pageable pageable = PageRequest.of(dto.getPage() - 1, dto.getSize());
+        Long inventoryId = dto.getIdInventario();
+        Long unitCode = dto.getCodUnidadeResponsavel();
+
+        if (unitCode != null) {
+            verifyIfExistsUnitByInventoryIdAndUnitNumber(inventoryId, unitCode);
+        }
+
+        Page<PatrimonyDTO> result = patrimonyRepository.findByInventoryId(
+                dto.getNumeroPatrimonio(),
+                dto.getSituacao(),
+                unitCode,
+                dto.getDescricaoItemMaterial(),
+                inventoryId,
+                pageable
+        );
+
+        String message = result.isEmpty() ? Messages.EMPTY_LIST : Messages.SUCCESS_FETCH;
+        return PaginatedResponseDTO.fromPage(message, result);
+    }
+
+    private PatrimonyEntity findById(Long id) {
+        Optional<PatrimonyEntity> patrimony = patrimonyRepository.findById(id);
+
+        if (patrimony.isEmpty() || Boolean.FALSE.equals(patrimony.get().getIsAtivo())) {
+            throw new ItemNotFoundException();
+        }
+
+        return patrimony.get();
+    }
+
+    public ResponseDTO<List<String>> findDescriptionsByInventoryId(Long inventoryId) {
+        List<String> descriptions = patrimonyRepository.findItemDescriptionsByInventoryId(inventoryId);
+        String message = descriptions.isEmpty() ? Messages.EMPTY_LIST : Messages.SUCCESS_FETCH;
+
+        return new ResponseDTO<>(message, descriptions);
+    }
+
+    public ResponseDTO<PatrimonyDetailsDTO> findItemDetailsById(Long id) {
+        PatrimonyDetailsDTO details = patrimonyRepository.findItemDetailsById(id);
+
+        if (details == null) {
+            throw new ItemNotFoundException();
+        }
+
+        return new ResponseDTO<>(Messages.SUCCESS_FETCH, details);
+    }
+
+    public ResponseDTO<PatrimonyObservationDTO> findItemObservationById(Long id) {
+        PatrimonyObservationDTO observation = patrimonyRepository.findItemObservationById(id);
+
+        if (observation == null) {
+            throw new ItemNotFoundException();
+        }
+
+        return new ResponseDTO<>(Messages.SUCCESS_FETCH, observation);
+    }
+
+    @Transactional
+    public ResponseDTO<Void> updateItemObservation(Long id, UpdatePatrimonyObservationDTO dto) {
+        PatrimonyEntity patrimonyEntity = this.findById(id);
+
+        inventoryControlService.verifyIfIsOpenById(patrimonyEntity.getInventario().getId());
+
+        patrimonyEntity.setObservacao(dto.getObservacao());
+        patrimonyEntity.setSala(dto.getSala());
+
+        patrimonyEntity.setSgProjetoModificador(dto.getSgProjetoModificador());
+        patrimonyEntity.setSgAcaoModificadora(dto.getSgAcaoModificadora());
+        patrimonyEntity.setNoEndPointModificador(request.getRequestURL().toString());
+
+        patrimonyRepository.save(patrimonyEntity);
+
+        return new ResponseDTO<>(Messages.SUCCESS_SAVE_OBSERVATION, null);
+    }
+
+    @Transactional
+    public void updateItemSituation(Long id, UpdatePatrimonySituationDTO dto) {
+        PatrimonySituationEnum situation = dto.getSituacao();
+
+        if (situation != PatrimonySituationEnum.LOCALIZADO && situation != PatrimonySituationEnum.NAO_LOCALIZADO) {
+            throw new InvalidStatusException();
+        }
+
+        PatrimonyEntity patrimonyEntity = this.findById(id);
+
+        inventoryControlService.verifyIfIsOpenById(patrimonyEntity.getInventario().getId());
+
+        patrimonyEntity.setSituacao(situation);
+        patrimonyEntity.setSgProjetoModificador(dto.getSgProjetoModificador());
+        patrimonyEntity.setSgAcaoModificadora(dto.getSgAcaoModificadora());
+        patrimonyEntity.setNoEndPointModificador(request.getRequestURL().toString());
+
+        patrimonyRepository.save(patrimonyEntity);
+    }
+
+    public PaginatedResponseDTO<PatrimonyOtherSituationDTO> findOtherSituations(FindAllPatrimonyOtherSituationDTO dto) {
+        Pageable page = PageRequest.of(dto.getPage() - 1, dto.getSize());
+        Long inventoryId = dto.getIdInventario();
+        Long unitCode = dto.getCodUnidadeResponsavel();
+
+        if (unitCode != null) {
+            verifyIfExistsUnitByInventoryIdAndUnitNumber(inventoryId, unitCode);
+        }
+
+        Page<PatrimonyOtherSituationDTO> result = patrimonyRepository.findOtherSituations(
+                dto.getSituacao(),
+                dto.getNumeroPatrimonio(),
+                unitCode,
+                dto.getDescricaoItemMaterial(),
+                inventoryId,
+                page
+        );
+
+        String message = result.isEmpty() ? Messages.EMPTY_LIST : Messages.SUCCESS_FETCH;
+        return PaginatedResponseDTO.fromPage(message, result);
+    }
+
+    public ResponseDTO<PatrimonyOtherSituationDTO> findOtherSituationById(Long id) {
+        PatrimonyOtherSituationDTO patrimonyOtherSituation = patrimonyRepository.findOtherSituationById(id);
+
+        if (patrimonyOtherSituation == null) {
+            throw new ItemNotFoundException();
+        }
+
+        return new ResponseDTO<>(Messages.SUCCESS_FETCH, patrimonyOtherSituation);
+    }
+
+    private void verifyIfCanUpdatePatrimony(PatrimonyEntity patrimonyEntity) {
+        inventoryControlService.verifyIfIsOpenById(patrimonyEntity.getInventario().getId());
+
+        if (Boolean.FALSE.equals(patrimonyEntity.getIsOutraSituacao())) {
+            throw new InvalidOtherSituationIdException(patrimonyEntity.getId());
+        }
+
+        if (Boolean.FALSE.equals(patrimonyEntity.getIsCadastroManual())) {
+            throw new NotManualRegistrationException();
+        }
+    }
+
+    @Transactional
+    public ResponseDTO<PatrimonyOtherSituationDTO> createOtherSituation(SavePatrimonyOtherSituationDTO dto) {
+        inventoryControlService.verifyIfIsOpenById(dto.getIdInventario());
+        UnitDTO unit = findUnitByInventoryIdAndUnitNumber(dto.getIdInventario(), dto.getCodUnidadeResponsavel());
+
+        PatrimonyEntity patrimonyEntity = new PatrimonyEntity();
+
+        patrimonyEntity.setIsOutraSituacao(true);
+        patrimonyEntity.setSituacao(dto.getSituacao());
+        patrimonyEntity.setNumeroPatrimonio(dto.getNumeroPatrimonio());
+        patrimonyEntity.setDescricaoItemMaterial(dto.getDescricaoItemMaterial());
+        patrimonyEntity.setCodigoUnidadeResponsavel(unit.getCodigo());
+        patrimonyEntity.setNomeUnidadeResponsavel(unit.getNome());
+        patrimonyEntity.setSgProjetoModificador(dto.getSgProjetoModificador());
+        patrimonyEntity.setSgAcaoModificadora(dto.getSgAcaoModificadora());
+        patrimonyEntity.setNoEndPointModificador(request.getRequestURL().toString());
+
+        // TODO: change it in the future
+        patrimonyEntity.setUuidUsuario("TESTE DO ENZO");
+
+        patrimonyRepository.save(patrimonyEntity);
+        PatrimonyOtherSituationDTO patrimonyOtherSituation = patrimonyRepository.findOtherSituationById(patrimonyEntity.getId());
+
+        return new ResponseDTO<>(Messages.SUCCESS_CREATED_PATRIMONY, patrimonyOtherSituation);
+    }
+
+    @Transactional
+    public ResponseDTO<PatrimonyOtherSituationDTO> updateOtherSituation(Long id, SavePatrimonyOtherSituationDTO dto) {
+        UnitDTO unit = findUnitByInventoryIdAndUnitNumber(dto.getIdInventario(), dto.getCodUnidadeResponsavel());
+
+        PatrimonyEntity patrimonyEntity = findById(id);
+        verifyIfCanUpdatePatrimony(patrimonyEntity);
+
+        patrimonyEntity.setSituacao(dto.getSituacao());
+        patrimonyEntity.setNumeroPatrimonio(dto.getNumeroPatrimonio());
+        patrimonyEntity.setDescricaoItemMaterial(dto.getDescricaoItemMaterial());
+        patrimonyEntity.setCodigoUnidadeResponsavel(unit.getCodigo());
+        patrimonyEntity.setNomeUnidadeResponsavel(unit.getNome());
+        patrimonyEntity.setSgProjetoModificador(dto.getSgProjetoModificador());
+        patrimonyEntity.setSgAcaoModificadora(dto.getSgAcaoModificadora());
+        patrimonyEntity.setNoEndPointModificador(request.getRequestURL().toString());
+
+        patrimonyRepository.save(patrimonyEntity);
+        PatrimonyOtherSituationDTO patrimonyOtherSituation = patrimonyRepository.findOtherSituationById(id);
+
+        return new ResponseDTO<>(Messages.SUCCESS_UPDATED_PATRIMONY, patrimonyOtherSituation);
+    }
+
+    @Transactional
+    public ResponseDTO<Void> deactivatePatrimonyOtherSituation(Long id, SaveDataDTO dto) {
+        PatrimonyEntity patrimonyEntity = findById(id);
+        verifyIfCanUpdatePatrimony(patrimonyEntity);
+
+        patrimonyEntity.setIsAtivo(false);
+        patrimonyEntity.setSgProjetoModificador(dto.getSgProjetoModificador());
+        patrimonyEntity.setSgAcaoModificadora(dto.getSgAcaoModificadora());
+        patrimonyEntity.setNoEndPointModificador(request.getRequestURL().toString());
+
+        patrimonyRepository.save(patrimonyEntity);
+
+        return new ResponseDTO<>(Messages.SUCCESS_DELETED_PATRIMONY, null);
+    }
+}
