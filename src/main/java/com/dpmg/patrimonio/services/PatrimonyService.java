@@ -7,7 +7,7 @@ import com.dpmg.patrimonio.models.dtos.PatrimonyOtherSituation.PatrimonyOtherSit
 import com.dpmg.patrimonio.models.dtos.PatrimonyOtherSituation.SavePatrimonyOtherSituationDTO;
 import com.dpmg.patrimonio.models.dtos.shared.PaginatedResponseDTO;
 import com.dpmg.patrimonio.models.dtos.shared.ResponseDTO;
-import com.dpmg.patrimonio.models.dtos.shared.SaveDataDTO;
+import com.dpmg.patrimonio.models.dtos.shared.BaseAuditDTO;
 import com.dpmg.patrimonio.models.entities.PatrimonyEntity;
 import com.dpmg.patrimonio.models.enums.PatrimonySituationEnum;
 import com.dpmg.patrimonio.repositories.PatrimonyRepository;
@@ -242,7 +242,7 @@ public class PatrimonyService {
     }
 
     @Transactional
-    public ResponseDTO<Void> deactivatePatrimonyOtherSituation(Long id, SaveDataDTO dto) {
+    public ResponseDTO<Void> deactivatePatrimonyOtherSituation(Long id, BaseAuditDTO dto) {
         PatrimonyEntity patrimonyEntity = findById(id);
         verifyIfCanUpdatePatrimony(patrimonyEntity);
 

@@ -5,7 +5,7 @@ import com.dpmg.patrimonio.models.dtos.ITPatrimony.ITPatrimonyDTO;
 import com.dpmg.patrimonio.models.dtos.ITPatrimony.SaveITPatrimonyDTO;
 import com.dpmg.patrimonio.models.dtos.shared.PaginatedResponseDTO;
 import com.dpmg.patrimonio.models.dtos.shared.ResponseDTO;
-import com.dpmg.patrimonio.models.dtos.shared.SaveDataDTO;
+import com.dpmg.patrimonio.models.dtos.shared.BaseAuditDTO;
 import com.dpmg.patrimonio.services.ITPatrimonyService;
 import jakarta.validation.Valid;
 import lombok.Data;
@@ -41,7 +41,7 @@ public class ITPatrimonyController {
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<ResponseDTO<Void>> toggleStatus(@PathVariable Long id, @Valid @RequestBody SaveDataDTO dto) {
+    public ResponseEntity<ResponseDTO<Void>> toggleStatus(@PathVariable Long id, @Valid @RequestBody BaseAuditDTO dto) {
         return ResponseEntity.ok(itPatrimonyService.toggleStatus(id, dto));
     }
 }

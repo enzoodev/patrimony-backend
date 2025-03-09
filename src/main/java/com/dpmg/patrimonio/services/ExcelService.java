@@ -3,7 +3,7 @@ package com.dpmg.patrimonio.services;
 import com.dpmg.patrimonio.exceptions.FailedImportException;
 import com.dpmg.patrimonio.exceptions.InvalidImportFileException;
 import com.dpmg.patrimonio.exceptions.WrongSheetNameException;
-import com.dpmg.patrimonio.models.dtos.shared.SaveDataDTO;
+import com.dpmg.patrimonio.models.dtos.shared.BaseAuditDTO;
 import com.dpmg.patrimonio.models.entities.InventoryControlEntity;
 import com.dpmg.patrimonio.models.entities.PatrimonyEntity;
 import com.dpmg.patrimonio.utils.SheetUtils;
@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 
 @Data
@@ -61,7 +60,7 @@ public class ExcelService {
         }
     }
 
-    private PatrimonyEntity createPatrimonyEntity(InventoryControlEntity inventory, SaveDataDTO auditData, String requestURL) {
+    private PatrimonyEntity createPatrimonyEntity(InventoryControlEntity inventory, BaseAuditDTO auditData, String requestURL) {
         PatrimonyEntity patrimonyEntity = new PatrimonyEntity();
 
         patrimonyEntity.setInventario(inventory);
@@ -96,7 +95,7 @@ public class ExcelService {
     public InventoryControlEntity setInventoryDataFromExcel(
             MultipartFile file,
             InventoryControlEntity inventory,
-            SaveDataDTO auditData,
+            BaseAuditDTO auditData,
             String requestURL
     ) {
         XSSFSheet sheet = getSheetFromExcel(file);

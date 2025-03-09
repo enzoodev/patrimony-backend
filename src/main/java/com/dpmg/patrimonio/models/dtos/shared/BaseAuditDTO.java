@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class SaveDataDTO {
+public class BaseAuditDTO {
     @NotNull(message = "O parâmetro 'sgProjetoModificador' é obrigatório para definir qual a sigla do projeto responsável pela alteração")
     private String sgProjetoModificador;
 

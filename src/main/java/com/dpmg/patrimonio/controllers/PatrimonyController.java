@@ -6,7 +6,7 @@ import com.dpmg.patrimonio.models.dtos.PatrimonyOtherSituation.PatrimonyOtherSit
 import com.dpmg.patrimonio.models.dtos.PatrimonyOtherSituation.SavePatrimonyOtherSituationDTO;
 import com.dpmg.patrimonio.models.dtos.shared.PaginatedResponseDTO;
 import com.dpmg.patrimonio.models.dtos.shared.ResponseDTO;
-import com.dpmg.patrimonio.models.dtos.shared.SaveDataDTO;
+import com.dpmg.patrimonio.models.dtos.shared.BaseAuditDTO;
 import com.dpmg.patrimonio.services.PatrimonyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -78,7 +78,7 @@ public class PatrimonyController {
     @DeleteMapping("/outras-situacoes/{id}")
     public ResponseEntity<ResponseDTO<Void>> deleteOtherSituation(
             @PathVariable Long id,
-            @Valid @ModelAttribute SaveDataDTO dto
+            @Valid @ModelAttribute BaseAuditDTO dto
     ) {
         return ResponseEntity.ok(patrimonyService.deactivatePatrimonyOtherSituation(id, dto));
     }

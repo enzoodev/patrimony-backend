@@ -6,7 +6,7 @@ import com.dpmg.patrimonio.models.dtos.ITPatrimony.ITPatrimonyDTO;
 import com.dpmg.patrimonio.models.dtos.ITPatrimony.SaveITPatrimonyDTO;
 import com.dpmg.patrimonio.models.dtos.shared.PaginatedResponseDTO;
 import com.dpmg.patrimonio.models.dtos.shared.ResponseDTO;
-import com.dpmg.patrimonio.models.dtos.shared.SaveDataDTO;
+import com.dpmg.patrimonio.models.dtos.shared.BaseAuditDTO;
 import com.dpmg.patrimonio.models.entities.ITPatrimonyEntity;
 import com.dpmg.patrimonio.repositories.ITPatrimonyRepository;
 import com.dpmg.patrimonio.utils.Messages;
@@ -133,7 +133,7 @@ public class ITPatrimonyService {
     }
 
     @Transactional
-    public ResponseDTO<Void> toggleStatus(Long id, SaveDataDTO dto) {
+    public ResponseDTO<Void> toggleStatus(Long id, BaseAuditDTO dto) {
         ITPatrimonyEntity itPatrimonyEntity = findById(id);
 
         Boolean isActive = itPatrimonyEntity.getIsAtivo();

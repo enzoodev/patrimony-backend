@@ -4,7 +4,7 @@ import com.dpmg.patrimonio.exceptions.*;
 import com.dpmg.patrimonio.models.dtos.InventoryControl.InventoryControlDTO;
 import com.dpmg.patrimonio.models.dtos.InventoryControl.UpdateInventoryStatusDTO;
 import com.dpmg.patrimonio.models.dtos.shared.ResponseDTO;
-import com.dpmg.patrimonio.models.dtos.shared.SaveDataDTO;
+import com.dpmg.patrimonio.models.dtos.shared.BaseAuditDTO;
 import com.dpmg.patrimonio.models.entities.InventoryControlEntity;
 import com.dpmg.patrimonio.models.enums.InventoryControlSituationEnum;
 import com.dpmg.patrimonio.models.enums.PatrimonySituationEnum;
@@ -17,8 +17,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
@@ -137,7 +135,7 @@ public class InventoryControlService {
         createInventoryForCurrentYear();
     }
 
-    private InventoryControlEntity createInventoryToImport(SaveDataDTO auditDTO) {
+    private InventoryControlEntity createInventoryToImport(BaseAuditDTO auditDTO) {
         InventoryControlEntity inventoryControl = new InventoryControlEntity();
         inventoryControl.setStatus(InventoryControlSituationEnum.IMPORTACAO_EM_ANDAMENTO);
 
@@ -148,7 +146,7 @@ public class InventoryControlService {
         return inventoryControlRepository.save(inventoryControl);
     }
 
-    private InventoryControlEntity getInventoryControlEntityToImport(SaveDataDTO auditDTO) {
+    private InventoryControlEntity getInventoryControlEntityToImport(BaseAuditDTO auditDTO) {
         Optional<InventoryControlEntity> inventoryControlEntityOptional = inventoryControlRepository.findByAnoAndIsAtivoTrue(LocalDateTime.now().getYear());
 
         // this condition usually will not be true because the inventory is created in the rolloverInventory method, but it is a good practice to check
@@ -175,7 +173,7 @@ public class InventoryControlService {
         throw new CanNotImportInventoryException(status);
     }
 
-    private ResponseDTO<InventoryControlSituationEnum> startImport(InventoryControlEntity inventoryControlEntity, SaveDataDTO auditData) {
+    private ResponseDTO<InventoryControlSituationEnum> startImport(InventoryControlEntity inventoryControlEntity, BaseAuditDTO auditData) {
         inventoryControlEntity.setStatus(InventoryControlSituationEnum.IMPORTACAO_EM_ANDAMENTO);
         inventoryControlEntity.setSgProjetoModificador(auditData.getSgProjetoModificador());
         inventoryControlEntity.setSgAcaoModificadora(auditData.getSgAcaoModificadora());
@@ -199,7 +197,7 @@ public class InventoryControlService {
     ) {
         excelService.validateFile(file);
 
-        SaveDataDTO auditDTO = new SaveDataDTO();
+        BaseAuditDTO auditDTO = new BaseAuditDTO();
         auditDTO.setSgProjetoModificador(sgProjetoModificador);
         auditDTO.setSgAcaoModificadora(sgAcaoModificadora);
 

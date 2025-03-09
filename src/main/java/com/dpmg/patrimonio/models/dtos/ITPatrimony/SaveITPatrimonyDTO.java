@@ -1,11 +1,11 @@
 package com.dpmg.patrimonio.models.dtos.ITPatrimony;
 
-import com.dpmg.patrimonio.models.dtos.shared.SaveDataDTO;
+import com.dpmg.patrimonio.models.dtos.shared.BaseAuditDTO;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class SaveITPatrimonyDTO extends SaveDataDTO {
+public class SaveITPatrimonyDTO extends BaseAuditDTO {
     @NotNull(message = "O parâmetro 'numPatrimonio' é obrigatório para definir qual o número de patrimônio do item")
     private String numPatrimonio;
 
