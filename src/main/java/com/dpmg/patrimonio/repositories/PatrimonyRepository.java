@@ -181,24 +181,21 @@ public interface PatrimonyRepository extends JpaRepository<PatrimonyEntity, Long
     """)
     List<UnitDTO> findResponsibleUnitListByInventoryId(@Param("inventoryId") Long inventoryId);
 
-    @Query(value = """
-        SELECT p.codigo_unidade_responsavel, p.nome_unidade_responsavel
-        FROM patrimony p
-        WHERE p.inventario_id = :inventoryId
-          AND p.codigo_unidade_responsavel = :unitNumber
-          AND p.is_ativo = true
-        LIMIT 1
-    """, nativeQuery = true)
+    @Query("""
+        SELECT patrimonio.codigoUnidadeResponsavel, patrimonio.nomeUnidadeResponsavel
+        FROM PatrimonyEntity patrimonio
+        WHERE patrimonio.inventario.id = :inventoryId
+          AND patrimonio.codigoUnidadeResponsavel = :unitNumber
+          AND patrimonio.isAtivo = true
+    """)
     UnitDTO findFirstUnitByInventoryIdAndUnitNumber(@Param("inventoryId") Long inventoryId,  @Param("unitNumber") Long unitNumber);
 
-    @Query(value = """
-        SELECT EXISTS (
-            SELECT 1 FROM patrimony patrimonio
-            WHERE patrimonio.inventario_id = :inventoryId
-              AND patrimonio.codigo_unidade_responsavel = :unitNumber
-              AND patrimonio.is_ativo = true
-            LIMIT 1
-        )
-    """, nativeQuery = true)
+    @Query("""
+        SELECT COUNT(patrimonio) > 0
+        FROM PatrimonyEntity patrimonio
+        WHERE patrimonio.inventario.id = :inventoryId
+          AND patrimonio.codigoUnidadeResponsavel = :unitNumber
+          AND patrimonio.isAtivo = true
+    """)
     boolean existsUnitByInventoryIdAndUnitNumber(@Param("inventoryId") Long inventoryId, @Param("unitNumber") Long unitNumber);
 }

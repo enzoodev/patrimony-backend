@@ -13,7 +13,9 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "tb_patrimonio")
+@Table(name = "tb_patrimonio", indexes = {
+        @Index(name = "idx_patrimonio_inventario", columnList = "co_controle_inventario, nu_patrimonio, co_unidade_responsavel")
+})
 public class PatrimonyEntity extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
