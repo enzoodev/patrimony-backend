@@ -92,13 +92,14 @@ public class ExcelService {
         }
     }
 
-    public InventoryControlEntity setInventoryDataFromExcel(
+    public List<PatrimonyEntity> getPatrimonyListFromExcel(
             MultipartFile file,
             InventoryControlEntity inventory,
             BaseAuditDTO auditData,
             String requestURL
     ) {
         XSSFSheet sheet = getSheetFromExcel(file);
+        List<PatrimonyEntity> patrimonyList = new ArrayList<>();
 
         int rowIndex = 0;
 
@@ -123,10 +124,10 @@ public class ExcelService {
                 cellIndex++;
             }
 
-            inventory.getListaPatrimonio().add(patrimonyEntity);
+            patrimonyList.add(patrimonyEntity);
             rowIndex++;
         }
 
-        return inventory;
+        return patrimonyList;
     }
 }

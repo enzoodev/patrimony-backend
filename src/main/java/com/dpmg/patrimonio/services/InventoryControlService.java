@@ -6,6 +6,7 @@ import com.dpmg.patrimonio.models.dtos.InventoryControl.UpdateInventoryStatusDTO
 import com.dpmg.patrimonio.models.dtos.shared.ResponseDTO;
 import com.dpmg.patrimonio.models.dtos.shared.BaseAuditDTO;
 import com.dpmg.patrimonio.models.entities.InventoryControlEntity;
+import com.dpmg.patrimonio.models.entities.PatrimonyEntity;
 import com.dpmg.patrimonio.models.enums.InventoryControlSituationEnum;
 import com.dpmg.patrimonio.models.enums.PatrimonySituationEnum;
 import com.dpmg.patrimonio.repositories.InventoryControlRepository;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -203,16 +205,19 @@ public class InventoryControlService {
 
         InventoryControlEntity inventoryControlEntity = getInventoryControlEntityToImport(auditDTO);
 
-        return startImport(inventoryControlEntity, auditDTO);
-//
-//        InventoryControlEntity inventoryControlEntityAfterUpdate = excelService.setInventoryDataFromExcel(
-//                file,
-//                inventoryControlEntity,
-//                auditDTO,
-//                request.getRequestURL().toString()
-//        );
-//
-//        inventoryControlRepository.save(inventoryControlEntityAfterUpdate);
-//        finishImport(inventoryControlEntityAfterUpdate);
+//        return startImport(inventoryControlEntity, auditDTO);
+
+        List<PatrimonyEntity> patrimonyList = excelService.getPatrimonyListFromExcel(
+                file,
+                inventoryControlEntity,
+                auditDTO,
+                request.getRequestURL().toString()
+        );
+
+        inventoryControlEntity.setListaPatrimonio(patrimonyList);
+        inventoryControlRepository.save(inventoryControlEntity);
+        finishImport(inventoryControlEntity);
+
+        return null;
     }
 }
