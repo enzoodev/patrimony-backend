@@ -141,6 +141,7 @@ public class InventoryControlService {
         InventoryControlEntity inventoryControl = new InventoryControlEntity();
         inventoryControl.setStatus(InventoryControlSituationEnum.IMPORTACAO_EM_ANDAMENTO);
 
+        inventoryControl.setUuidUsuario("TESTE DO ENZO");
         inventoryControl.setSgProjetoModificador(auditDTO.getSgProjetoModificador());
         inventoryControl.setSgAcaoModificadora(auditDTO.getSgAcaoModificadora());
         inventoryControl.setNoEndPointModificador(request.getRequestURL().toString());
@@ -165,6 +166,7 @@ public class InventoryControlService {
 
         if (status == InventoryControlSituationEnum.IMPORTADO) {
             inventoryControlRepository.delete(inventoryControlEntity);
+            inventoryControlRepository.flush();
             return createInventoryToImport(auditDTO);
         }
 
@@ -218,6 +220,6 @@ public class InventoryControlService {
         inventoryControlRepository.save(inventoryControlEntity);
         finishImport(inventoryControlEntity);
 
-        return null;
+        return new ResponseDTO<>("funcionooou", inventoryControlEntity.getStatus());
     }
 }
