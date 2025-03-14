@@ -30,4 +30,6 @@ public class Messages {
     public final String IMPORT_ALREADY_IN_PROGRESS = "Já existe uma importação em andamento";
     public final String SHEET_INCORRET_NAME = "O nome da página da planilha está incorreto. O nome correto é: %s";
     public final String IMPORT_STARTED = "Importação iniciada, aguarde e receberá um e-mail ao final do processo";
+    public final String IMPORT_COMPLETED = "Importação concluída com sucesso";
+    public final String IMPORT_COMPLETED_FULL_MESSAGE = "Importação do inventário do ano %s concluída com sucesso importando um total de %s itens.";
 }

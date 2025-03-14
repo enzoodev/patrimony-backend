@@ -6,7 +6,6 @@ import com.dpmg.patrimonio.models.dtos.InventoryControl.UpdateInventoryStatusDTO
 import com.dpmg.patrimonio.models.dtos.shared.ResponseDTO;
 import com.dpmg.patrimonio.models.dtos.shared.BaseAuditDTO;
 import com.dpmg.patrimonio.models.entities.InventoryControlEntity;
-import com.dpmg.patrimonio.models.entities.PatrimonyEntity;
 import com.dpmg.patrimonio.models.enums.InventoryControlSituationEnum;
 import com.dpmg.patrimonio.models.enums.PatrimonySituationEnum;
 import com.dpmg.patrimonio.repositories.InventoryControlRepository;
@@ -19,16 +18,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 @Data
 @Service
 public class InventoryControlService {
-    private final ExcelService excelService;
-    private final InventoryControlRepository inventoryControlRepository;
     private final HttpServletRequest request;
+    private final ExcelService excelService;
+    private final ImportProcessingService importProcessingService;
+    private final InventoryControlRepository inventoryControlRepository;
 
     private InventoryControlEntity findById(Long id) {
         Optional<InventoryControlEntity> inventoryControl = inventoryControlRepository.findById(id);
@@ -188,11 +187,6 @@ public class InventoryControlService {
         return new ResponseDTO<>(Messages.IMPORT_STARTED, inventoryControlEntity.getStatus());
     }
 
-    private void finishImport(InventoryControlEntity inventoryControlEntity) {
-        inventoryControlEntity.setStatus(InventoryControlSituationEnum.IMPORTADO);
-        inventoryControlRepository.save(inventoryControlEntity);
-    }
-
     @Transactional
     public ResponseDTO<InventoryControlSituationEnum> importInventory(
             MultipartFile file,
@@ -206,20 +200,9 @@ public class InventoryControlService {
         auditDTO.setSgAcaoModificadora(sgAcaoModificadora);
 
         InventoryControlEntity inventoryControlEntity = getInventoryControlEntityToImport(auditDTO);
+        ResponseDTO<InventoryControlSituationEnum> response = startImport(inventoryControlEntity, auditDTO);
+        importProcessingService.processImportAsync(file, inventoryControlEntity, auditDTO, request.getRequestURL().toString());
 
-//        return startImport(inventoryControlEntity, auditDTO);
-
-        List<PatrimonyEntity> patrimonyList = excelService.getPatrimonyListFromExcel(
-                file,
-                inventoryControlEntity,
-                auditDTO,
-                request.getRequestURL().toString()
-        );
-
-        inventoryControlEntity.setListaPatrimonio(patrimonyList);
-        inventoryControlRepository.save(inventoryControlEntity);
-        finishImport(inventoryControlEntity);
-
-        return new ResponseDTO<>("funcionooou", inventoryControlEntity.getStatus());
+        return response;
     }
 }
