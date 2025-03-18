@@ -27,7 +27,7 @@ import java.util.Optional;
 public class InventoryControlService {
     private final HttpServletRequest request;
     private final ExcelService excelService;
-    private final ImportProcessingService importProcessingService;
+    private final ImportInventoryExecutorService importInventoryExecutorService;
     private final InventoryControlRepository inventoryControlRepository;
 
     private InventoryControlEntity findById(Long id) {
@@ -151,7 +151,7 @@ public class InventoryControlService {
         try {
             byte[] fileBytes = file.getBytes();
             String requestURL = request.getRequestURL().toString();
-            importProcessingService.handleInventoryImport(fileBytes, auditDTO, requestURL);
+            importInventoryExecutorService.execute(fileBytes, auditDTO, requestURL);
 
             return new ResponseDTO<>(Messages.IMPORT_STARTED, InventoryControlSituationEnum.IMPORTACAO_EM_ANDAMENTO);
         } catch (IOException e) {
