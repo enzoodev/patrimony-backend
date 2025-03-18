@@ -72,7 +72,7 @@ public class ImportInventoryExecutorService {
         return inventoryControlRepository.save(inventoryControlEntity);
     }
 
-    private void rollbackImport(String errorMessage) {
+    private void rollback(String errorMessage) {
         Optional<InventoryControlEntity> inventoryControlEntityOptional = inventoryControlRepository.findByAnoAndIsAtivoTrue(LocalDateTime.now().getYear());
 
         if (inventoryControlEntityOptional.isEmpty()) {
@@ -113,7 +113,7 @@ public class ImportInventoryExecutorService {
 
             finish(inventoryControlEntity, patrimonyList);
         } catch (Exception exception) {
-            rollbackImport(exception.getMessage());
+            rollback(exception.getMessage());
         }
     }
 }
