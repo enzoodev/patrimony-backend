@@ -15,9 +15,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 @Data
@@ -79,9 +77,10 @@ public class ExcelService {
         return patrimonyEntity;
     }
 
-    private XSSFSheet getSheetFromExcel(MultipartFile file) {
+    private XSSFSheet getSheetFromExcel(byte[] fileBytes) {
         try {
-            XSSFWorkbook workbook = new XSSFWorkbook(file.getInputStream());
+            InputStream inputStream = new ByteArrayInputStream(fileBytes);
+            XSSFWorkbook workbook = new XSSFWorkbook(inputStream);
             XSSFSheet sheet = workbook.getSheet(SheetUtils.mainName);
 
             if (sheet == null) {
@@ -95,12 +94,12 @@ public class ExcelService {
     }
 
     public List<PatrimonyEntity> getPatrimonyListFromExcel(
-            MultipartFile file,
+            byte[] fileBytes,
             InventoryControlEntity inventory,
             BaseAuditDTO auditData,
             String requestURL
     ) {
-        XSSFSheet sheet = getSheetFromExcel(file);
+        XSSFSheet sheet = getSheetFromExcel(fileBytes);
         List<PatrimonyEntity> patrimonyList = new ArrayList<>();
 
         int rowIndex = 0;

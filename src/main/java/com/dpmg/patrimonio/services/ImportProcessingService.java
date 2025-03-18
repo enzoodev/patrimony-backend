@@ -93,7 +93,7 @@ public class ImportProcessingService {
 
     @Async
     public void handleInventoryImport(
-            MultipartFile file,
+            byte[] fileBytes,
             BaseAuditDTO auditDTO,
             String requestURL
     ) {
@@ -101,7 +101,7 @@ public class ImportProcessingService {
 
         try {
             List<PatrimonyEntity> patrimonyList = excelService.getPatrimonyListFromExcel(
-                    file,
+                    fileBytes,
                     inventoryControlEntity,
                     auditDTO,
                     requestURL
