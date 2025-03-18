@@ -37,7 +37,7 @@ public class PatrimonyService {
     }
 
     private UnitDTO findUnitByInventoryIdAndUnitNumber(Long inventoryId, Long unitNumber) {
-        UnitDTO unit = patrimonyRepository.findFirstUnitByInventoryIdAndUnitNumber(inventoryId, unitNumber);
+        UnitDTO unit = patrimonyRepository.findResponsibleUnitByInventoryIdAndUnitNumber(inventoryId, unitNumber);
 
         if (unit == null) {
             throw new UnitNotFoundException();
@@ -224,6 +224,8 @@ public class PatrimonyService {
 
     @Transactional
     public ResponseDTO<PatrimonyOtherSituationDTO> updateOtherSituation(Long id, SavePatrimonyOtherSituationDTO dto) {
+        inventoryControlService.verifyIfIsOpenById(dto.getIdInventario());
+
         UnitDTO unit = findUnitByInventoryIdAndUnitNumber(dto.getIdInventario(), dto.getCodUnidadeResponsavel());
 
         PatrimonyEntity patrimonyEntity = findById(id);
@@ -262,6 +264,60 @@ public class PatrimonyService {
         return new ResponseDTO<>(Messages.SUCCESS_DELETED_PATRIMONY, null);
     }
 
-//    @Transactional
-//    public ResponseDTO
+    private ResponseDTO<PatrimonyToBeLocalizedDTO> findPatrimonyInTheSameUnit(Long inventoryId, Long unitCode, Long patrimonyNumber) {
+        PatrimonyToBeLocalizedDTO patrimonyInTheSameUnitDTO = patrimonyRepository.findByInventoryIdAndUnitNumberAndPatrimonyNumber(
+                inventoryId,
+                unitCode,
+                patrimonyNumber
+        );
+
+        if (patrimonyInTheSameUnitDTO == null) {
+            return null;
+        }
+
+        if (patrimonyInTheSameUnitDTO.getSituacaoAtual() == PatrimonySituationEnum.LOCALIZADO) {
+            return new ResponseDTO<>(String.format(Messages.DUPLICATED_ITEM, patrimonyNumber), patrimonyInTheSameUnitDTO);
+        }
+
+        patrimonyInTheSameUnitDTO.setSituacaoFutura(PatrimonySituationEnum.LOCALIZADO);
+        return new ResponseDTO<>(Messages.SUCCESS_FETCH, patrimonyInTheSameUnitDTO);
+    }
+
+    private ResponseDTO<PatrimonyToBeLocalizedDTO> findPatrimonyInOtherUnit(Long inventoryId, Long unitCode, Long patrimonyNumber) {
+        PatrimonyToBeLocalizedDTO patrimonyInOtherUnitDTO = patrimonyRepository.findByInventoryIdAndPatrimonyNumber(
+                inventoryId,
+                unitCode
+        );
+
+        if (patrimonyInOtherUnitDTO == null) {
+            return null;
+        }
+
+        String message = String.format(Messages.LOCALIZED_IN_OTHER_UNIT, patrimonyNumber, patrimonyInOtherUnitDTO.getDescricaoItemMaterial(), patrimonyInOtherUnitDTO.getNomeUnidadeResponsavel(), patrimonyInOtherUnitDTO.getNomeUnidadeEncontrado());
+        return new ResponseDTO<>(message, patrimonyInOtherUnitDTO);
+    }
+
+    @Transactional
+    public ResponseDTO<PatrimonyToBeLocalizedDTO> verifyIfPatrimonyIsReadToBeLocalized(VerifyIfPatrimonyIsReadToBeLocalizedDTO dto) {
+        Long inventoryId = dto.getIdInventario();
+        Long unitCode = dto.getCodigoUnidadeResponsavel();
+        Long patrimonyNumber = dto.getNumeroPatrimonio();
+
+        inventoryControlService.verifyIfIsOpenById(inventoryId);
+        verifyIfExistsUnitByInventoryIdAndUnitNumber(inventoryId, unitCode);
+
+        ResponseDTO<PatrimonyToBeLocalizedDTO> patrimonyInTheSameUnit = findPatrimonyInTheSameUnit(inventoryId, unitCode, patrimonyNumber);
+
+        if (patrimonyInTheSameUnit != null) {
+            return patrimonyInTheSameUnit;
+        }
+
+        ResponseDTO<PatrimonyToBeLocalizedDTO> patrimonyInOtherUnit = findPatrimonyInOtherUnit(inventoryId, unitCode, patrimonyNumber);
+
+        if (patrimonyInOtherUnit != null) {
+            return patrimonyInOtherUnit;
+        }
+
+        return new ResponseDTO<>(Messages.SUCCESS_FETCH, null);
+    }
 }

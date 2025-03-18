@@ -32,4 +32,6 @@ public class Messages {
     public final String IMPORT_STARTED = "Importação iniciada, aguarde e receberá um e-mail ao final do processo";
     public final String IMPORT_COMPLETED = "Importação concluída com sucesso";
     public final String IMPORT_COMPLETED_FULL_MESSAGE = "Importação do inventário do ano %s concluída com sucesso importando um total de %s itens.";
+    public final String LOCALIZED_IN_OTHER_UNIT = "Item de código %s e descrição %s está inventariado na Unidade Administrativa %s porém foi localizado na Unidade Administrativa %s";
+    public final String DUPLICATED_ITEM = "Código do patrimônio %s já consta como localizado. Deseja relatar a ocorrência nas outras situações?";
 }

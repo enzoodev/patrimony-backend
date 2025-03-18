@@ -1,9 +1,6 @@
 package com.dpmg.patrimonio.repositories;
 
-import com.dpmg.patrimonio.models.dtos.Patrimony.PatrimonyDTO;
-import com.dpmg.patrimonio.models.dtos.Patrimony.PatrimonyDetailsDTO;
-import com.dpmg.patrimonio.models.dtos.Patrimony.PatrimonyObservationDTO;
-import com.dpmg.patrimonio.models.dtos.Patrimony.UnitDTO;
+import com.dpmg.patrimonio.models.dtos.Patrimony.*;
 import com.dpmg.patrimonio.models.dtos.PatrimonyOtherSituation.PatrimonyOtherSituationDTO;
 import com.dpmg.patrimonio.models.entities.PatrimonyEntity;
 import com.dpmg.patrimonio.models.enums.PatrimonySituationEnum;
@@ -188,7 +185,16 @@ public interface PatrimonyRepository extends JpaRepository<PatrimonyEntity, Long
           AND patrimonio.codigoUnidadeResponsavel = :unitNumber
           AND patrimonio.isAtivo = true
     """)
-    UnitDTO findFirstUnitByInventoryIdAndUnitNumber(@Param("inventoryId") Long inventoryId,  @Param("unitNumber") Long unitNumber);
+    UnitDTO findResponsibleUnitByInventoryIdAndUnitNumber(@Param("inventoryId") Long inventoryId,  @Param("unitNumber") Long unitNumber);
+
+    @Query("""
+        SELECT patrimonio.codigoUnidadeEncontrado, patrimonio.nomeUnidadeEncontrado
+        FROM PatrimonyEntity patrimonio
+        WHERE patrimonio.inventario.id = :inventoryId
+          AND patrimonio.codigoUnidadeEncontrado = :unitNumber
+          AND patrimonio.isAtivo = true
+    """)
+    UnitDTO findFoundedUnitByInventoryIdAndUnitNumber(@Param("inventoryId") Long inventoryId,  @Param("unitNumber") Long unitNumber);
 
     @Query("""
         SELECT COUNT(patrimonio) > 0
@@ -198,4 +204,44 @@ public interface PatrimonyRepository extends JpaRepository<PatrimonyEntity, Long
           AND patrimonio.isAtivo = true
     """)
     boolean existsUnitByInventoryIdAndUnitNumber(@Param("inventoryId") Long inventoryId, @Param("unitNumber") Long unitNumber);
+
+    @Query("""
+        SELECT new com.dpmg.patrimonio.models.dtos.Patrimony.PatrimonyToBeLocalizedDTO(
+            patrimonio.id,
+            patrimonio.descricaoItemMaterial,
+            null,
+            patrimonio.situacao,
+            null
+        )
+        FROM PatrimonyEntity patrimonio
+        WHERE patrimonio.inventario.id = :inventoryId
+          AND patrimonio.codigoUnidadeResponsavel = :unitNumber
+          AND patrimonio.numeroPatrimonio = :patrimonyNumber
+          AND patrimonio.isOutraSituacao = false
+          AND patrimonio.isAtivo = true
+    """)
+    PatrimonyToBeLocalizedDTO findByInventoryIdAndUnitNumberAndPatrimonyNumber(
+            @Param("inventoryId") Long inventoryId,
+            @Param("unitNumber") Long unitNumber,
+            @Param("patrimonyNumber") Long patrimonyNumber
+    );
+
+    @Query("""
+        SELECT new com.dpmg.patrimonio.models.dtos.Patrimony.PatrimonyToBeLocalizedDTO(
+            patrimonio.id,
+            patrimonio.descricaoItemMaterial,
+            null,
+            patrimonio.situacao
+            null
+        )
+        FROM PatrimonyEntity patrimonio
+        WHERE patrimonio.inventario.id = :inventoryId
+          AND patrimonio.numeroPatrimonio = :patrimonyNumber
+          AND patrimonio.isOutraSituacao = false
+          AND patrimonio.isAtivo = true
+    """)
+    PatrimonyToBeLocalizedDTO findByInventoryIdAndPatrimonyNumber(
+            @Param("inventoryId") Long inventoryId,
+            @Param("patrimonyNumber") Long patrimonyNumber
+    );
 }
