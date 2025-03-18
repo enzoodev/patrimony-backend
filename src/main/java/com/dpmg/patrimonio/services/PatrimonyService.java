@@ -181,7 +181,7 @@ public class PatrimonyService {
         return new ResponseDTO<>(Messages.SUCCESS_FETCH, patrimonyOtherSituation);
     }
 
-    private void verifyIfCanUpdatePatrimony(PatrimonyEntity patrimonyEntity) {
+    private void verifyIfCanUpdatePatrimonyOtherSituation(PatrimonyEntity patrimonyEntity) {
         inventoryControlService.verifyIfIsOpenById(patrimonyEntity.getInventario().getId());
 
         if (Boolean.FALSE.equals(patrimonyEntity.getIsOutraSituacao())) {
@@ -206,6 +206,9 @@ public class PatrimonyService {
         patrimonyEntity.setDescricaoItemMaterial(dto.getDescricaoItemMaterial());
         patrimonyEntity.setCodigoUnidadeResponsavel(unit.getCodigo());
         patrimonyEntity.setNomeUnidadeResponsavel(unit.getNome());
+        patrimonyEntity.setCodigoUnidadeEncontrado(unit.getCodigo());
+        patrimonyEntity.setNomeUnidadeEncontrado(unit.getNome());
+
         patrimonyEntity.setSgProjetoModificador(dto.getSgProjetoModificador());
         patrimonyEntity.setSgAcaoModificadora(dto.getSgAcaoModificadora());
         patrimonyEntity.setNoEndPointModificador(request.getRequestURL().toString());
@@ -224,13 +227,16 @@ public class PatrimonyService {
         UnitDTO unit = findUnitByInventoryIdAndUnitNumber(dto.getIdInventario(), dto.getCodUnidadeResponsavel());
 
         PatrimonyEntity patrimonyEntity = findById(id);
-        verifyIfCanUpdatePatrimony(patrimonyEntity);
+        verifyIfCanUpdatePatrimonyOtherSituation(patrimonyEntity);
 
         patrimonyEntity.setSituacao(dto.getSituacao());
         patrimonyEntity.setNumeroPatrimonio(dto.getNumeroPatrimonio());
         patrimonyEntity.setDescricaoItemMaterial(dto.getDescricaoItemMaterial());
         patrimonyEntity.setCodigoUnidadeResponsavel(unit.getCodigo());
         patrimonyEntity.setNomeUnidadeResponsavel(unit.getNome());
+        patrimonyEntity.setCodigoUnidadeEncontrado(unit.getCodigo());
+        patrimonyEntity.setNomeUnidadeEncontrado(unit.getNome());
+
         patrimonyEntity.setSgProjetoModificador(dto.getSgProjetoModificador());
         patrimonyEntity.setSgAcaoModificadora(dto.getSgAcaoModificadora());
         patrimonyEntity.setNoEndPointModificador(request.getRequestURL().toString());
@@ -244,7 +250,7 @@ public class PatrimonyService {
     @Transactional
     public ResponseDTO<Void> deactivatePatrimonyOtherSituation(Long id, BaseAuditDTO dto) {
         PatrimonyEntity patrimonyEntity = findById(id);
-        verifyIfCanUpdatePatrimony(patrimonyEntity);
+        verifyIfCanUpdatePatrimonyOtherSituation(patrimonyEntity);
 
         patrimonyEntity.setIsAtivo(false);
         patrimonyEntity.setSgProjetoModificador(dto.getSgProjetoModificador());
@@ -255,4 +261,7 @@ public class PatrimonyService {
 
         return new ResponseDTO<>(Messages.SUCCESS_DELETED_PATRIMONY, null);
     }
+
+//    @Transactional
+//    public ResponseDTO
 }

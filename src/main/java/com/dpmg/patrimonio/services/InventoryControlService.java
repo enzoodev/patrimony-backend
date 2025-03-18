@@ -136,58 +136,6 @@ public class InventoryControlService {
         createInventoryForCurrentYear();
     }
 
-    private InventoryControlEntity createInventoryToImport(BaseAuditDTO auditDTO) {
-        InventoryControlEntity inventoryControl = new InventoryControlEntity();
-        inventoryControl.setStatus(InventoryControlSituationEnum.IMPORTACAO_EM_ANDAMENTO);
-
-        inventoryControl.setUuidUsuario("TESTE DO ENZO");
-        inventoryControl.setSgProjetoModificador(auditDTO.getSgProjetoModificador());
-        inventoryControl.setSgAcaoModificadora(auditDTO.getSgAcaoModificadora());
-        inventoryControl.setNoEndPointModificador(request.getRequestURL().toString());
-
-        return inventoryControlRepository.save(inventoryControl);
-    }
-
-    private InventoryControlEntity getInventoryControlEntityToImport(BaseAuditDTO auditDTO) {
-        Optional<InventoryControlEntity> inventoryControlEntityOptional = inventoryControlRepository.findByAnoAndIsAtivoTrue(LocalDateTime.now().getYear());
-
-        // this condition usually will not be true because the inventory is created in the rolloverInventory method, but it is a good practice to check
-        if (inventoryControlEntityOptional.isEmpty()) {
-            return createInventoryToImport(auditDTO);
-        }
-
-        InventoryControlEntity inventoryControlEntity = inventoryControlEntityOptional.get();
-        InventoryControlSituationEnum status = inventoryControlEntity.getStatus();
-
-        if (status == InventoryControlSituationEnum.INICIADO) {
-            return inventoryControlEntity;
-        }
-
-        if (status == InventoryControlSituationEnum.IMPORTADO) {
-            inventoryControlRepository.delete(inventoryControlEntity);
-            inventoryControlRepository.flush();
-            return createInventoryToImport(auditDTO);
-        }
-
-        if (status == InventoryControlSituationEnum.IMPORTACAO_EM_ANDAMENTO) {
-            throw new ImportAlreadyInProgressException();
-        }
-
-        throw new CanNotImportInventoryException(status);
-    }
-
-    private ResponseDTO<InventoryControlSituationEnum> startImport(InventoryControlEntity inventoryControlEntity, BaseAuditDTO auditData) {
-        inventoryControlEntity.setStatus(InventoryControlSituationEnum.IMPORTACAO_EM_ANDAMENTO);
-        inventoryControlEntity.setSgProjetoModificador(auditData.getSgProjetoModificador());
-        inventoryControlEntity.setSgAcaoModificadora(auditData.getSgAcaoModificadora());
-        inventoryControlEntity.setNoEndPointModificador(request.getRequestURL().toString());
-
-        inventoryControlRepository.save(inventoryControlEntity);
-
-        return new ResponseDTO<>(Messages.IMPORT_STARTED, inventoryControlEntity.getStatus());
-    }
-
-    @Transactional
     public ResponseDTO<InventoryControlSituationEnum> importInventory(
             MultipartFile file,
             String sgProjetoModificador,
@@ -199,10 +147,8 @@ public class InventoryControlService {
         auditDTO.setSgProjetoModificador(sgProjetoModificador);
         auditDTO.setSgAcaoModificadora(sgAcaoModificadora);
 
-        InventoryControlEntity inventoryControlEntity = getInventoryControlEntityToImport(auditDTO);
-        ResponseDTO<InventoryControlSituationEnum> response = startImport(inventoryControlEntity, auditDTO);
-        importProcessingService.processImportAsync(file, inventoryControlEntity, auditDTO, request.getRequestURL().toString());
+        importProcessingService.handleInventoryImport(file, auditDTO, request.getRequestURL().toString());
 
-        return response;
+        return new ResponseDTO<>(Messages.IMPORT_STARTED, InventoryControlSituationEnum.IMPORTACAO_EM_ANDAMENTO);
     }
 }

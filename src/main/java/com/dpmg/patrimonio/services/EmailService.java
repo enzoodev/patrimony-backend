@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 public class EmailService {
     private final JavaMailSender mailSender;
 
-    private void sendSimpleEmail(String subject, String text) {
+    public void sendSimpleEmail(String subject, String text) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo("enzodm.dev@gmail.com");
         message.setSubject(subject);
