@@ -36,6 +36,14 @@ public class PatrimonyController {
         return ResponseEntity.ok(patrimonyService.findItemObservationById(id));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ResponseDTO<Void>> localizePatrimony(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdatePatrimonyObservationDTO dto
+    ) {
+        return ResponseEntity.ok(patrimonyService.localizePatrimony(id, dto));
+    }
+
     @PutMapping("/{id}/observacao")
     public ResponseEntity<ResponseDTO<Void>> updateItemObservation(
             @PathVariable Long id,
@@ -51,6 +59,13 @@ public class PatrimonyController {
     ) {
         patrimonyService.updateItemSituation(id, dto);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/verificar")
+    public ResponseEntity<ResponseDTO<PatrimonyToBeLocalizedDTO>> verifyIfPatrimonyIsReadToBeLocalized(
+            @Valid @RequestBody VerifyIfPatrimonyIsReadToBeLocalizedDTO dto
+    ) {
+        return ResponseEntity.ok(patrimonyService.verifyIfPatrimonyIsReadToBeLocalized(dto));
     }
 
     @GetMapping("/outras-situacoes")

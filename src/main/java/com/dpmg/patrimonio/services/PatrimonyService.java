@@ -201,6 +201,7 @@ public class PatrimonyService {
         PatrimonyEntity patrimonyEntity = new PatrimonyEntity();
 
         patrimonyEntity.setIsOutraSituacao(true);
+        patrimonyEntity.setIsCadastroManual(true);
         patrimonyEntity.setSituacao(dto.getSituacao());
         patrimonyEntity.setNumeroPatrimonio(dto.getNumeroPatrimonio());
         patrimonyEntity.setDescricaoItemMaterial(dto.getDescricaoItemMaterial());
@@ -283,7 +284,43 @@ public class PatrimonyService {
         return new ResponseDTO<>(Messages.SUCCESS_FETCH, patrimonyInTheSameUnitDTO);
     }
 
-    private ResponseDTO<PatrimonyToBeLocalizedDTO> findPatrimonyInOtherUnit(Long inventoryId, Long unitCode, Long patrimonyNumber) {
+    private void createOtherSituationForLocalizedInOtherUnit(
+            PatrimonyEntity existingPatrimonyEntity,
+            UnitDTO responsibleUnit,
+            UnitDTO foundedUnit,
+            String sgProjetoModificador,
+            String sgAcaoModificadora,
+            String requestURL
+    ) {
+        PatrimonyEntity patrimonyEntity = new PatrimonyEntity();
+
+        patrimonyEntity.setInventario(existingPatrimonyEntity.getInventario());
+        patrimonyEntity.setSituacao(PatrimonySituationEnum.OUTRA_UNIDADE);
+        patrimonyEntity.setIsOutraSituacao(true);
+        patrimonyEntity.setIsPatrimonioForaDaUnidade(true);
+        patrimonyEntity.setIsCadastroManual(false);
+        patrimonyEntity.setNumeroPatrimonio(existingPatrimonyEntity.getNumeroPatrimonio());
+        patrimonyEntity.setCodigoUnidadeResponsavel(responsibleUnit.getCodigo());
+        patrimonyEntity.setNomeUnidadeResponsavel(responsibleUnit.getNome());
+        patrimonyEntity.setCodigoUnidadeEncontrado(foundedUnit.getCodigo());
+        patrimonyEntity.setNomeUnidadeEncontrado(foundedUnit.getNome());
+        patrimonyEntity.setDescricaoItemMaterial(existingPatrimonyEntity.getDescricaoItemMaterial());
+
+        patrimonyEntity.setSgProjetoModificador(sgProjetoModificador);
+        patrimonyEntity.setSgAcaoModificadora(sgAcaoModificadora);
+        patrimonyEntity.setNoEndPointModificador(requestURL);
+        patrimonyEntity.setUuidUsuario("TESTE DO ENZO");
+
+        patrimonyRepository.save(patrimonyEntity);
+    }
+
+    private ResponseDTO<PatrimonyToBeLocalizedDTO> findPatrimonyInOtherUnit(
+            Long inventoryId,
+            Long unitCode,
+            Long patrimonyNumber,
+            String sgProjetoModificador,
+            String sgAcaoModificadora
+    ) {
         PatrimonyToBeLocalizedDTO patrimonyInOtherUnitDTO = patrimonyRepository.findByInventoryIdAndPatrimonyNumber(
                 inventoryId,
                 unitCode
@@ -293,7 +330,42 @@ public class PatrimonyService {
             return null;
         }
 
-        String message = String.format(Messages.LOCALIZED_IN_OTHER_UNIT, patrimonyNumber, patrimonyInOtherUnitDTO.getDescricaoItemMaterial(), patrimonyInOtherUnitDTO.getNomeUnidadeResponsavel(), patrimonyInOtherUnitDTO.getNomeUnidadeEncontrado());
+        String requestURL = request.getRequestURL().toString();
+
+        PatrimonyEntity existingPatrimonyEntity = findById(patrimonyInOtherUnitDTO.getId());
+        UnitDTO responsibleUnit = findUnitByInventoryIdAndUnitNumber(inventoryId, existingPatrimonyEntity.getCodigoUnidadeResponsavel());
+        UnitDTO foundedUnit = findUnitByInventoryIdAndUnitNumber(inventoryId, unitCode);
+
+        patrimonyInOtherUnitDTO.setUnidadeEncontrado(foundedUnit);
+        patrimonyInOtherUnitDTO.setSituacaoFutura(PatrimonySituationEnum.OUTRA_UNIDADE);
+
+        existingPatrimonyEntity.setSituacao(PatrimonySituationEnum.LOCALIZADO);
+        existingPatrimonyEntity.setIsPatrimonioForaDaUnidade(true);
+        existingPatrimonyEntity.setCodigoUnidadeEncontrado(foundedUnit.getCodigo());
+        existingPatrimonyEntity.setNomeUnidadeEncontrado(foundedUnit.getNome());
+
+        existingPatrimonyEntity.setSgProjetoModificador(sgProjetoModificador);
+        existingPatrimonyEntity.setSgAcaoModificadora(sgAcaoModificadora);
+        existingPatrimonyEntity.setNoEndPointModificador(requestURL);
+
+        patrimonyRepository.save(existingPatrimonyEntity);
+
+        createOtherSituationForLocalizedInOtherUnit(
+            existingPatrimonyEntity,
+            responsibleUnit,
+            foundedUnit,
+            sgProjetoModificador,
+            sgAcaoModificadora,
+            requestURL
+        );
+
+        String message = String.format(
+                Messages.LOCALIZED_IN_OTHER_UNIT,
+                patrimonyNumber,
+                existingPatrimonyEntity.getDescricaoItemMaterial(),
+                responsibleUnit.getNome(),
+                foundedUnit.getNome()
+        );
         return new ResponseDTO<>(message, patrimonyInOtherUnitDTO);
     }
 
@@ -312,12 +384,41 @@ public class PatrimonyService {
             return patrimonyInTheSameUnit;
         }
 
-        ResponseDTO<PatrimonyToBeLocalizedDTO> patrimonyInOtherUnit = findPatrimonyInOtherUnit(inventoryId, unitCode, patrimonyNumber);
+        ResponseDTO<PatrimonyToBeLocalizedDTO> patrimonyInOtherUnit = findPatrimonyInOtherUnit(
+                inventoryId,
+                unitCode,
+                patrimonyNumber,
+                dto.getSgProjetoModificador(),
+                dto.getSgAcaoModificadora()
+        );
 
         if (patrimonyInOtherUnit != null) {
             return patrimonyInOtherUnit;
         }
 
-        return new ResponseDTO<>(Messages.SUCCESS_FETCH, null);
+        return new ResponseDTO<>(Messages.ITEM_NOT_FOUND_IN_INVENTORY, null);
+    }
+
+    @Transactional
+    public ResponseDTO<Void> localizePatrimony(Long id, UpdatePatrimonyObservationDTO dto) {
+        PatrimonyEntity patrimonyEntity = findById(id);
+
+        inventoryControlService.verifyIfIsOpenById(patrimonyEntity.getInventario().getId());
+
+        if (patrimonyEntity.getSituacao() == PatrimonySituationEnum.LOCALIZADO) {
+            throw new ThisItemWasAlreadyLocatedException(patrimonyEntity.getNumeroPatrimonio());
+        }
+
+        patrimonyEntity.setSituacao(PatrimonySituationEnum.LOCALIZADO);
+        patrimonyEntity.setSala(dto.getSala());
+        patrimonyEntity.setObservacao(dto.getObservacao());
+
+        patrimonyEntity.setSgProjetoModificador(dto.getSgProjetoModificador());
+        patrimonyEntity.setSgAcaoModificadora(dto.getSgAcaoModificadora());
+        patrimonyEntity.setNoEndPointModificador(request.getRequestURL().toString());
+
+        patrimonyRepository.save(patrimonyEntity);
+
+        return new ResponseDTO<>(Messages.SUCCESS_UPDATED_PATRIMONY, null);
     }
 }

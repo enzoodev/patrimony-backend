@@ -12,7 +12,6 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
@@ -72,6 +71,12 @@ public class RestExceptionHandler {
 
     @ExceptionHandler(CanNotImportInventoryException.class)
     private ResponseEntity<RestErrorDTO> canNotImportInventoryExceptionHandler(CanNotImportInventoryException exception) {
+        RestErrorDTO threatResponse = new RestErrorDTO(HttpStatus.BAD_REQUEST.value(), exception.getMessage());
+        return ResponseEntity.badRequest().body(threatResponse);
+    }
+
+    @ExceptionHandler(ThisItemWasAlreadyLocatedException.class)
+    private ResponseEntity<RestErrorDTO> thisItemWasAlreadyLocatedExceptionHandler(ThisItemWasAlreadyLocatedException exception) {
         RestErrorDTO threatResponse = new RestErrorDTO(HttpStatus.BAD_REQUEST.value(), exception.getMessage());
         return ResponseEntity.badRequest().body(threatResponse);
     }

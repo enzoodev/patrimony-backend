@@ -188,15 +188,6 @@ public interface PatrimonyRepository extends JpaRepository<PatrimonyEntity, Long
     UnitDTO findResponsibleUnitByInventoryIdAndUnitNumber(@Param("inventoryId") Long inventoryId,  @Param("unitNumber") Long unitNumber);
 
     @Query("""
-        SELECT patrimonio.codigoUnidadeEncontrado, patrimonio.nomeUnidadeEncontrado
-        FROM PatrimonyEntity patrimonio
-        WHERE patrimonio.inventario.id = :inventoryId
-          AND patrimonio.codigoUnidadeEncontrado = :unitNumber
-          AND patrimonio.isAtivo = true
-    """)
-    UnitDTO findFoundedUnitByInventoryIdAndUnitNumber(@Param("inventoryId") Long inventoryId,  @Param("unitNumber") Long unitNumber);
-
-    @Query("""
         SELECT COUNT(patrimonio) > 0
         FROM PatrimonyEntity patrimonio
         WHERE patrimonio.inventario.id = :inventoryId
@@ -231,7 +222,7 @@ public interface PatrimonyRepository extends JpaRepository<PatrimonyEntity, Long
             patrimonio.id,
             patrimonio.descricaoItemMaterial,
             null,
-            patrimonio.situacao
+            patrimonio.situacao,
             null
         )
         FROM PatrimonyEntity patrimonio
