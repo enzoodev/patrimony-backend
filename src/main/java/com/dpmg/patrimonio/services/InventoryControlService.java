@@ -42,8 +42,16 @@ public class InventoryControlService {
 
     public ResponseDTO<InventoryControlDTO> findDTOByYear(Integer year) {
         InventoryControlDTO inventoryControlDTO = inventoryControlRepository.findDTOByYear(year);
-        String message = inventoryControlDTO == null ? Messages.INVENTORY_NOT_FOUND : Messages.FOUND_INVENTORY;
-        return new ResponseDTO<>(message, inventoryControlDTO);
+
+        if (inventoryControlDTO == null) {
+            createInventoryForCurrentYear();
+            inventoryControlRepository.flush();
+
+            InventoryControlDTO newInventoryControlDTO = inventoryControlRepository.findDTOByYear(year);
+            return new ResponseDTO<>(Messages.FOUND_INVENTORY, newInventoryControlDTO);
+        }
+
+        return new ResponseDTO<>(Messages.FOUND_INVENTORY, inventoryControlDTO);
     }
 
     public ResponseDTO<Map<String, String>> findPatrimonySituations() {
