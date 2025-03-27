@@ -24,7 +24,7 @@ public class PatrimonyEntity extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "co_controle_inventario", nullable = false)
-    private InventoryControlEntity inventario;
+    private InventoryEntity inventario;
 
     @Column(name = "fl_outra_situacao", nullable = false)
     private Boolean isOutraSituacao;

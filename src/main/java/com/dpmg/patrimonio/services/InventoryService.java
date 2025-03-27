@@ -1,14 +1,14 @@
 package com.dpmg.patrimonio.services;
 
 import com.dpmg.patrimonio.exceptions.*;
-import com.dpmg.patrimonio.models.dtos.InventoryControl.InventoryControlDTO;
-import com.dpmg.patrimonio.models.dtos.InventoryControl.UpdateInventoryStatusDTO;
+import com.dpmg.patrimonio.models.dtos.Inventory.InventoryDTO;
+import com.dpmg.patrimonio.models.dtos.Inventory.UpdateInventoryStatusDTO;
 import com.dpmg.patrimonio.models.dtos.shared.ResponseDTO;
 import com.dpmg.patrimonio.models.dtos.shared.BaseAuditDTO;
-import com.dpmg.patrimonio.models.entities.InventoryControlEntity;
-import com.dpmg.patrimonio.models.enums.InventoryControlSituationEnum;
+import com.dpmg.patrimonio.models.entities.InventoryEntity;
+import com.dpmg.patrimonio.models.enums.InventorySituationEnum;
 import com.dpmg.patrimonio.models.enums.PatrimonySituationEnum;
-import com.dpmg.patrimonio.repositories.InventoryControlRepository;
+import com.dpmg.patrimonio.repositories.InventoryRepository;
 import com.dpmg.patrimonio.utils.Messages;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
@@ -24,34 +24,34 @@ import java.util.Optional;
 
 @Data
 @Service
-public class InventoryControlService {
+public class InventoryService {
     private final HttpServletRequest request;
     private final ExcelService excelService;
     private final ImportInventoryExecutorService importInventoryExecutorService;
-    private final InventoryControlRepository inventoryControlRepository;
+    private final InventoryRepository inventoryRepository;
 
-    private InventoryControlEntity findById(Long id) {
-        Optional<InventoryControlEntity> inventoryControl = inventoryControlRepository.findById(id);
+    private InventoryEntity findById(Long id) {
+        Optional<InventoryEntity> optionalInventoryEntity = inventoryRepository.findById(id);
 
-        if (inventoryControl.isEmpty() || Boolean.FALSE.equals(inventoryControl.get().getIsAtivo())) {
+        if (optionalInventoryEntity.isEmpty() || Boolean.FALSE.equals(optionalInventoryEntity.get().getIsAtivo())) {
             throw new InventoryNotFoundException();
         }
 
-        return inventoryControl.get();
+        return optionalInventoryEntity.get();
     }
 
-    public ResponseDTO<InventoryControlDTO> findDTOByYear(Integer year) {
-        InventoryControlDTO inventoryControlDTO = inventoryControlRepository.findDTOByYear(year);
+    public ResponseDTO<InventoryDTO> findDTOByYear(Integer year) {
+        InventoryDTO inventoryDTO = inventoryRepository.findDTOByYear(year);
 
-        if (inventoryControlDTO == null) {
+        if (inventoryDTO == null) {
             createInventoryForCurrentYear();
-            inventoryControlRepository.flush();
+            inventoryRepository.flush();
 
-            InventoryControlDTO newInventoryControlDTO = inventoryControlRepository.findDTOByYear(year);
-            return new ResponseDTO<>(Messages.FOUND_INVENTORY, newInventoryControlDTO);
+            InventoryDTO newInventoryDTO = inventoryRepository.findDTOByYear(year);
+            return new ResponseDTO<>(Messages.FOUND_INVENTORY, newInventoryDTO);
         }
 
-        return new ResponseDTO<>(Messages.FOUND_INVENTORY, inventoryControlDTO);
+        return new ResponseDTO<>(Messages.FOUND_INVENTORY, inventoryDTO);
     }
 
     public ResponseDTO<Map<String, String>> findPatrimonySituations() {
@@ -63,29 +63,29 @@ public class InventoryControlService {
     }
 
     public void verifyIfIsOpenById(Long id) {
-        InventoryControlSituationEnum status = inventoryControlRepository.findStatusById(id);
+        InventorySituationEnum status = inventoryRepository.findStatusById(id);
 
         if (status == null) {
             throw new InventoryNotFoundException();
         }
 
-        if (status != InventoryControlSituationEnum.ABERTO) {
+        if (status != InventorySituationEnum.ABERTO) {
             throw new CanNotUpdateItemIfInventoryIsNotOpenException();
         }
     }
 
     @Transactional
-    public ResponseDTO<InventoryControlSituationEnum> updateStatus(UpdateInventoryStatusDTO dto) {
+    public ResponseDTO<InventorySituationEnum> updateStatus(UpdateInventoryStatusDTO dto) {
         Long id = dto.getIdInventario();
-        InventoryControlSituationEnum status = dto.getStatus();
+        InventorySituationEnum status = dto.getStatus();
 
-        if (status != InventoryControlSituationEnum.ABERTO && status != InventoryControlSituationEnum.FECHADO) {
+        if (status != InventorySituationEnum.ABERTO && status != InventorySituationEnum.FECHADO) {
             throw new InvalidStatusException();
         }
 
-        InventoryControlEntity inventory = findById(id);
+        InventoryEntity inventory = findById(id);
 
-        if (inventory.getStatus() == InventoryControlSituationEnum.ENCERRADO) {
+        if (inventory.getStatus() == InventorySituationEnum.ENCERRADO) {
             throw new CanNotUpdateFinishedInventoryException(inventory.getAno());
         }
 
@@ -94,45 +94,45 @@ public class InventoryControlService {
         inventory.setSgAcaoModificadora(dto.getSgAcaoModificadora());
         inventory.setNoEndPointModificador(request.getRequestURL().toString());
 
-        inventoryControlRepository.save(inventory);
+        inventoryRepository.save(inventory);
         return new ResponseDTO<>(Messages.SUCCESS_UPDATE_STATUS, status);
     }
 
     private void closeLastYearInventory() {
         Integer lastYear = LocalDateTime.now().getYear() - 1;
-        Optional<InventoryControlEntity> inventoryControlOptional = inventoryControlRepository.findByAnoAndIsAtivoTrue(lastYear);
+        Optional<InventoryEntity> optionalInventoryEntity = inventoryRepository.findByAnoAndIsAtivoTrue(lastYear);
 
-        if (inventoryControlOptional.isEmpty()) {
+        if (optionalInventoryEntity.isEmpty()) {
             return;
         }
 
-        InventoryControlEntity inventoryControl = inventoryControlOptional.get();
-        inventoryControl.setStatus(InventoryControlSituationEnum.ENCERRADO);
+        InventoryEntity inventoryEntity = optionalInventoryEntity.get();
+        inventoryEntity.setStatus(InventorySituationEnum.ENCERRADO);
 
-        inventoryControl.setSgProjetoModificador("IVT");
-        inventoryControl.setSgAcaoModificadora("AUTO");
-        inventoryControl.setNoEndPointModificador("AUTO");
+        inventoryEntity.setSgProjetoModificador("IVT");
+        inventoryEntity.setSgAcaoModificadora("AUTO");
+        inventoryEntity.setNoEndPointModificador("AUTO");
 
-        inventoryControlRepository.save(inventoryControl);
+        inventoryRepository.save(inventoryEntity);
     }
 
     private void createInventoryForCurrentYear() {
         Integer currentYear = LocalDateTime.now().getYear();
-        Optional<InventoryControlEntity> inventoryControlOptional = inventoryControlRepository.findByAnoAndIsAtivoTrue(currentYear);
+        Optional<InventoryEntity> optionalInventoryEntity = inventoryRepository.findByAnoAndIsAtivoTrue(currentYear);
 
-        if (inventoryControlOptional.isPresent()) {
+        if (optionalInventoryEntity.isPresent()) {
             return;
         }
 
-        InventoryControlEntity inventoryControl = new InventoryControlEntity();
+        InventoryEntity inventoryEntity = new InventoryEntity();
 
         // TODO: change it in the future
-        inventoryControl.setUuidUsuario("TESTE DO ENZO");
-        inventoryControl.setSgProjetoModificador("IVT");
-        inventoryControl.setSgAcaoModificadora("AUTO");
-        inventoryControl.setNoEndPointModificador("AUTO");
+        inventoryEntity.setUuidUsuario("TESTE DO ENZO");
+        inventoryEntity.setSgProjetoModificador("IVT");
+        inventoryEntity.setSgAcaoModificadora("AUTO");
+        inventoryEntity.setNoEndPointModificador("AUTO");
 
-        inventoryControlRepository.save(inventoryControl);
+        inventoryRepository.save(inventoryEntity);
     }
 
     /**
@@ -145,7 +145,7 @@ public class InventoryControlService {
         createInventoryForCurrentYear();
     }
 
-    public ResponseDTO<InventoryControlSituationEnum> importInventory(
+    public ResponseDTO<InventorySituationEnum> importInventory(
             MultipartFile file,
             String sgProjetoModificador,
             String sgAcaoModificadora
@@ -161,7 +161,7 @@ public class InventoryControlService {
             String requestURL = request.getRequestURL().toString();
             importInventoryExecutorService.execute(fileBytes, auditDTO, requestURL);
 
-            return new ResponseDTO<>(Messages.IMPORT_STARTED, InventoryControlSituationEnum.IMPORTACAO_EM_ANDAMENTO);
+            return new ResponseDTO<>(Messages.IMPORT_STARTED, InventorySituationEnum.IMPORTACAO_EM_ANDAMENTO);
         } catch (IOException e) {
             throw new ImportAlreadyInProgressException();
         }

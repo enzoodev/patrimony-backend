@@ -4,7 +4,7 @@ import com.dpmg.patrimonio.exceptions.FailedImportException;
 import com.dpmg.patrimonio.exceptions.InvalidImportFileException;
 import com.dpmg.patrimonio.exceptions.WrongSheetNameException;
 import com.dpmg.patrimonio.models.dtos.shared.BaseAuditDTO;
-import com.dpmg.patrimonio.models.entities.InventoryControlEntity;
+import com.dpmg.patrimonio.models.entities.InventoryEntity;
 import com.dpmg.patrimonio.models.entities.PatrimonyEntity;
 import com.dpmg.patrimonio.models.mappers.PatrimonyMapper;
 import com.dpmg.patrimonio.utils.SheetUtils;
@@ -79,7 +79,7 @@ public class ExcelService {
 
     public List<PatrimonyEntity> getPatrimonyListFromExcel(
             byte[] fileBytes,
-            InventoryControlEntity inventory,
+            InventoryEntity inventory,
             BaseAuditDTO auditData,
             String requestURL
     ) {

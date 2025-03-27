@@ -3,7 +3,7 @@ package com.dpmg.patrimonio.controllers;
 import com.dpmg.patrimonio.models.dtos.shared.FindByInventoryIdDTO;
 import com.dpmg.patrimonio.models.dtos.Patrimony.UnitDTO;
 import com.dpmg.patrimonio.models.dtos.shared.ResponseDTO;
-import com.dpmg.patrimonio.services.InventoryControlService;
+import com.dpmg.patrimonio.services.InventoryService;
 import com.dpmg.patrimonio.services.PatrimonyService;
 import jakarta.validation.Valid;
 import lombok.Data;
@@ -17,17 +17,17 @@ import java.util.Map;
 @RestController
 @RequestMapping("/utils")
 public class UtilsController {
-    private final InventoryControlService inventoryControlService;
+    private final InventoryService inventoryService;
     private final PatrimonyService patrimonyService;
 
     @GetMapping("/situacoes")
     public ResponseEntity<ResponseDTO<Map<String, String>>> getPatrimonySituations() {
-        return ResponseEntity.ok(inventoryControlService.findPatrimonySituations());
+        return ResponseEntity.ok(inventoryService.findPatrimonySituations());
     }
 
     @GetMapping("/outras-situacoes")
     public ResponseEntity<ResponseDTO<Map<String, String>>> getPatrimonyOtherSituations() {
-        return ResponseEntity.ok(inventoryControlService.findPatrimonyOtherSituations());
+        return ResponseEntity.ok(inventoryService.findPatrimonyOtherSituations());
     }
 
     @GetMapping("/descricao")

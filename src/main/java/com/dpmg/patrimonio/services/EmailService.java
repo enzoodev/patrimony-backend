@@ -1,6 +1,6 @@
 package com.dpmg.patrimonio.services;
 
-import com.dpmg.patrimonio.models.entities.InventoryControlEntity;
+import com.dpmg.patrimonio.models.entities.InventoryEntity;
 import com.dpmg.patrimonio.utils.Messages;
 import lombok.Data;
 import org.springframework.mail.SimpleMailMessage;
@@ -22,8 +22,8 @@ public class EmailService {
         mailSender.send(message);
     }
 
-    public void sendImportCompletionEmail(InventoryControlEntity inventoryControlEntity) {
-        String text = String.format(Messages.IMPORT_COMPLETED_FULL_MESSAGE, inventoryControlEntity.getAno(), inventoryControlEntity.getListaPatrimonio().size());
+    public void sendImportCompletionEmail(InventoryEntity inventoryEntity) {
+        String text = String.format(Messages.IMPORT_COMPLETED_FULL_MESSAGE, inventoryEntity.getAno(), inventoryEntity.getListaPatrimonio().size());
         sendSimpleEmail(Messages.IMPORT_COMPLETED, text);
     }
 

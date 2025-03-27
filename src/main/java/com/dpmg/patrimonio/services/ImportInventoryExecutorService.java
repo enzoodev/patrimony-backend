@@ -3,10 +3,10 @@ package com.dpmg.patrimonio.services;
 import com.dpmg.patrimonio.exceptions.CanNotImportInventoryException;
 import com.dpmg.patrimonio.exceptions.ImportAlreadyInProgressException;
 import com.dpmg.patrimonio.models.dtos.shared.BaseAuditDTO;
-import com.dpmg.patrimonio.models.entities.InventoryControlEntity;
+import com.dpmg.patrimonio.models.entities.InventoryEntity;
 import com.dpmg.patrimonio.models.entities.PatrimonyEntity;
-import com.dpmg.patrimonio.models.enums.InventoryControlSituationEnum;
-import com.dpmg.patrimonio.repositories.InventoryControlRepository;
+import com.dpmg.patrimonio.models.enums.InventorySituationEnum;
+import com.dpmg.patrimonio.repositories.InventoryRepository;
 import lombok.Data;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -19,81 +19,81 @@ import java.util.Optional;
 @Service
 public class ImportInventoryExecutorService {
     private final ExcelService excelService;
-    private final InventoryControlRepository inventoryControlRepository;
+    private final InventoryRepository inventoryRepository;
     private final EmailService emailService;
 
-    private InventoryControlEntity createInventory(BaseAuditDTO auditDTO, String requestURL) {
-        InventoryControlEntity inventoryControl = new InventoryControlEntity();
+    private InventoryEntity createInventory(BaseAuditDTO auditDTO, String requestURL) {
+        InventoryEntity inventoryEntity = new InventoryEntity();
 
-        inventoryControl.setUuidUsuario("TESTE DO ENZO");
-        inventoryControl.setSgProjetoModificador(auditDTO.getSgProjetoModificador());
-        inventoryControl.setSgAcaoModificadora(auditDTO.getSgAcaoModificadora());
-        inventoryControl.setNoEndPointModificador(requestURL);
+        inventoryEntity.setUuidUsuario("TESTE DO ENZO");
+        inventoryEntity.setSgProjetoModificador(auditDTO.getSgProjetoModificador());
+        inventoryEntity.setSgAcaoModificadora(auditDTO.getSgAcaoModificadora());
+        inventoryEntity.setNoEndPointModificador(requestURL);
 
-        return inventoryControlRepository.save(inventoryControl);
+        return inventoryRepository.save(inventoryEntity);
     }
 
-    private InventoryControlEntity getInventoryControlEntity(BaseAuditDTO auditDTO, String requestURL) {
-        Optional<InventoryControlEntity> inventoryControlEntityOptional = inventoryControlRepository.findByAnoAndIsAtivoTrue(LocalDateTime.now().getYear());
+    private InventoryEntity getInventoryEntity(BaseAuditDTO auditDTO, String requestURL) {
+        Optional<InventoryEntity> inventoryEntityOptional = inventoryRepository.findByAnoAndIsAtivoTrue(LocalDateTime.now().getYear());
 
         // this condition usually will not be true because the inventory is created in the rolloverInventory method, but it is a good practice to check
-        if (inventoryControlEntityOptional.isEmpty()) {
+        if (inventoryEntityOptional.isEmpty()) {
             return createInventory(auditDTO, requestURL);
         }
 
-        InventoryControlEntity inventoryControlEntity = inventoryControlEntityOptional.get();
-        InventoryControlSituationEnum status = inventoryControlEntity.getStatus();
+        InventoryEntity inventoryEntity = inventoryEntityOptional.get();
+        InventorySituationEnum status = inventoryEntity.getStatus();
 
-        if (status == InventoryControlSituationEnum.INICIADO) {
-            return inventoryControlEntity;
+        if (status == InventorySituationEnum.INICIADO) {
+            return inventoryEntity;
         }
 
-        if (status == InventoryControlSituationEnum.IMPORTADO) {
-            inventoryControlRepository.delete(inventoryControlEntity);
-            inventoryControlRepository.flush();
+        if (status == InventorySituationEnum.IMPORTADO) {
+            inventoryRepository.delete(inventoryEntity);
+            inventoryRepository.flush();
             return createInventory(auditDTO, requestURL);
         }
 
-        if (status == InventoryControlSituationEnum.IMPORTACAO_EM_ANDAMENTO) {
+        if (status == InventorySituationEnum.IMPORTACAO_EM_ANDAMENTO) {
             throw new ImportAlreadyInProgressException();
         }
 
         throw new CanNotImportInventoryException(status);
     }
 
-    private InventoryControlEntity start(BaseAuditDTO auditDTO, String requestURL) {
-        InventoryControlEntity inventoryControlEntity = getInventoryControlEntity(auditDTO, requestURL);
+    private InventoryEntity start(BaseAuditDTO auditDTO, String requestURL) {
+        InventoryEntity inventoryEntity = getInventoryEntity(auditDTO, requestURL);
 
-        inventoryControlEntity.setStatus(InventoryControlSituationEnum.IMPORTACAO_EM_ANDAMENTO);
-        inventoryControlEntity.setSgProjetoModificador(auditDTO.getSgProjetoModificador());
-        inventoryControlEntity.setSgAcaoModificadora(auditDTO.getSgAcaoModificadora());
-        inventoryControlEntity.setNoEndPointModificador(requestURL);
+        inventoryEntity.setStatus(InventorySituationEnum.IMPORTACAO_EM_ANDAMENTO);
+        inventoryEntity.setSgProjetoModificador(auditDTO.getSgProjetoModificador());
+        inventoryEntity.setSgAcaoModificadora(auditDTO.getSgAcaoModificadora());
+        inventoryEntity.setNoEndPointModificador(requestURL);
 
-        return inventoryControlRepository.save(inventoryControlEntity);
+        return inventoryRepository.save(inventoryEntity);
     }
 
     private void rollback(String errorMessage) {
-        Optional<InventoryControlEntity> inventoryControlEntityOptional = inventoryControlRepository.findByAnoAndIsAtivoTrue(LocalDateTime.now().getYear());
+        Optional<InventoryEntity> inventoryEntityOptional = inventoryRepository.findByAnoAndIsAtivoTrue(LocalDateTime.now().getYear());
 
-        if (inventoryControlEntityOptional.isEmpty()) {
+        if (inventoryEntityOptional.isEmpty()) {
             emailService.sendImportFailureEmail(errorMessage);
             return;
         }
 
-        InventoryControlEntity inventoryControlEntity = inventoryControlEntityOptional.get();
-        inventoryControlEntity.setListaPatrimonio(null);
-        inventoryControlEntity.setStatus(InventoryControlSituationEnum.INICIADO);
-        inventoryControlRepository.save(inventoryControlEntity);
+        InventoryEntity inventoryEntity = inventoryEntityOptional.get();
+        inventoryEntity.setListaPatrimonio(null);
+        inventoryEntity.setStatus(InventorySituationEnum.INICIADO);
+        inventoryRepository.save(inventoryEntity);
 
         emailService.sendImportFailureEmail(errorMessage);
     }
     
-    private void finish(InventoryControlEntity inventoryControlEntity, List<PatrimonyEntity> patrimonyList) {
-        inventoryControlEntity.setListaPatrimonio(patrimonyList);
-        inventoryControlEntity.setStatus(InventoryControlSituationEnum.IMPORTADO);
-        inventoryControlRepository.save(inventoryControlEntity);
+    private void finish(InventoryEntity inventoryEntity, List<PatrimonyEntity> patrimonyList) {
+        inventoryEntity.setListaPatrimonio(patrimonyList);
+        inventoryEntity.setStatus(InventorySituationEnum.IMPORTADO);
+        inventoryRepository.save(inventoryEntity);
 
-        emailService.sendImportCompletionEmail(inventoryControlEntity);
+        emailService.sendImportCompletionEmail(inventoryEntity);
     }
 
     @Async("importInventoryExecutor")
@@ -103,15 +103,15 @@ public class ImportInventoryExecutorService {
             String requestURL
     ) {
         try {
-            InventoryControlEntity inventoryControlEntity = start(auditDTO, requestURL);
+            InventoryEntity inventoryEntity = start(auditDTO, requestURL);
             List<PatrimonyEntity> patrimonyList = excelService.getPatrimonyListFromExcel(
                     fileBytes,
-                    inventoryControlEntity,
+                    inventoryEntity,
                     auditDTO,
                     requestURL
             );
 
-            finish(inventoryControlEntity, patrimonyList);
+            finish(inventoryEntity, patrimonyList);
         } catch (Exception exception) {
             rollback(exception.getMessage());
         }

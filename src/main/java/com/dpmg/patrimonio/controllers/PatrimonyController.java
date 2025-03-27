@@ -14,7 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/patrimonio")
+@RequestMapping("/patrimonios")
 @RequiredArgsConstructor
 public class PatrimonyController {
     private final PatrimonyService patrimonyService;
@@ -61,7 +61,7 @@ public class PatrimonyController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/verificar")
+    @PostMapping("/verificacao")
     public ResponseEntity<ResponseDTO<PatrimonyToBeLocalizedDTO>> verifyIfPatrimonyIsReadToBeLocalized(
             @Valid @RequestBody VerifyIfPatrimonyIsReadToBeLocalizedDTO dto
     ) {

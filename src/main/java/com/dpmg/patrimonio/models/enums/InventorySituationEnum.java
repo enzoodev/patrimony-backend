@@ -1,6 +1,6 @@
 package com.dpmg.patrimonio.models.enums;
 
-public enum InventoryControlSituationEnum {
+public enum InventorySituationEnum {
     INICIADO,
     ABERTO,
     FECHADO,

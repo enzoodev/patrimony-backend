@@ -1,7 +1,7 @@
 package com.dpmg.patrimonio.models.entities;
 
 import com.dpmg.patrimonio.models.entities.shared.BaseEntity;
-import com.dpmg.patrimonio.models.enums.InventoryControlSituationEnum;
+import com.dpmg.patrimonio.models.enums.InventorySituationEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,7 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Table(name = "tb_controle_inventario")
-public class InventoryControlEntity extends BaseEntity {
+public class InventoryEntity extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "co_seq_controle_inventario")
@@ -26,7 +26,7 @@ public class InventoryControlEntity extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "st_inventario")
-    private InventoryControlSituationEnum status;
+    private InventorySituationEnum status;
 
     @Column(name = "ds_observacao")
     private String observacao;
@@ -38,7 +38,7 @@ public class InventoryControlEntity extends BaseEntity {
     @Override
     public void prePersist() {
         super.prePersist();
-        this.status = InventoryControlSituationEnum.INICIADO;
+        this.status = InventorySituationEnum.INICIADO;
         this.ano = LocalDateTime.now().getYear();
     }
 }

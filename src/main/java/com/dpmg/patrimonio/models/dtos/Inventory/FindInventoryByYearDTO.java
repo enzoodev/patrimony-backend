@@ -1,4 +1,4 @@
-package com.dpmg.patrimonio.models.dtos.InventoryControl;
+package com.dpmg.patrimonio.models.dtos.Inventory;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;

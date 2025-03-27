@@ -22,13 +22,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Data
 @Service
 public class PatrimonyService {
     private final PatrimonyRepository patrimonyRepository;
-    private final InventoryControlService inventoryControlService;
+    private final InventoryService inventoryService;
     private final HttpServletRequest request;
 
     public ResponseDTO<List<UnitDTO>> findResponsibleUnitListByInventoryId(Long id) {
@@ -40,7 +41,7 @@ public class PatrimonyService {
     private UnitDTO findUnitByInventoryIdAndUnitNumber(Long inventoryId, Long unitNumber) {
         UnitDTO unit = patrimonyRepository.findResponsibleUnitByInventoryIdAndUnitNumber(inventoryId, unitNumber);
 
-        if (unit == null) {
+        if (Objects.isNull(unit)) {
             throw new UnitNotFoundException();
         }
 
@@ -116,7 +117,7 @@ public class PatrimonyService {
     public ResponseDTO<Void> updateItemObservation(Long id, UpdatePatrimonyObservationDTO dto) {
         PatrimonyEntity patrimonyEntity = this.findById(id);
 
-        inventoryControlService.verifyIfIsOpenById(patrimonyEntity.getInventario().getId());
+        inventoryService.verifyIfIsOpenById(patrimonyEntity.getInventario().getId());
 
         patrimonyEntity.setObservacao(dto.getObservacao());
         patrimonyEntity.setSala(dto.getSala());
@@ -140,7 +141,7 @@ public class PatrimonyService {
 
         PatrimonyEntity patrimonyEntity = this.findById(id);
 
-        inventoryControlService.verifyIfIsOpenById(patrimonyEntity.getInventario().getId());
+        inventoryService.verifyIfIsOpenById(patrimonyEntity.getInventario().getId());
 
         patrimonyEntity.setSituacao(situation);
         patrimonyEntity.setSgProjetoModificador(dto.getSgProjetoModificador());
@@ -183,7 +184,7 @@ public class PatrimonyService {
     }
 
     private void verifyIfCanUpdatePatrimonyOtherSituation(PatrimonyEntity patrimonyEntity) {
-        inventoryControlService.verifyIfIsOpenById(patrimonyEntity.getInventario().getId());
+        inventoryService.verifyIfIsOpenById(patrimonyEntity.getInventario().getId());
 
         if (Boolean.FALSE.equals(patrimonyEntity.getIsOutraSituacao())) {
             throw new InvalidOtherSituationIdException(patrimonyEntity.getId());
@@ -196,10 +197,10 @@ public class PatrimonyService {
 
     @Transactional
     public ResponseDTO<PatrimonyOtherSituationDTO> createOtherSituation(SavePatrimonyOtherSituationDTO dto) {
-        inventoryControlService.verifyIfIsOpenById(dto.getIdInventario());
+        inventoryService.verifyIfIsOpenById(dto.getIdInventario());
         UnitDTO unit = findUnitByInventoryIdAndUnitNumber(dto.getIdInventario(), dto.getCodUnidadeResponsavel());
 
-        PatrimonyEntity patrimonyEntity = PatrimonyMapper.toEntityFromOtherSituation(dto, unit, request.getRequestURL().toString());
+        PatrimonyEntity patrimonyEntity = PatrimonyMapper.toEntityFromCreateOtherSituation(dto, unit, request.getRequestURL().toString());
         patrimonyRepository.save(patrimonyEntity);
 
         PatrimonyOtherSituationDTO patrimonyOtherSituation = patrimonyRepository.findOtherSituationById(patrimonyEntity.getId());
@@ -209,24 +210,17 @@ public class PatrimonyService {
 
     @Transactional
     public ResponseDTO<PatrimonyOtherSituationDTO> updateOtherSituation(Long id, SavePatrimonyOtherSituationDTO dto) {
-        inventoryControlService.verifyIfIsOpenById(dto.getIdInventario());
+        inventoryService.verifyIfIsOpenById(dto.getIdInventario());
 
         UnitDTO unit = findUnitByInventoryIdAndUnitNumber(dto.getIdInventario(), dto.getCodUnidadeResponsavel());
 
-        PatrimonyEntity patrimonyEntity = findById(id);
+        PatrimonyEntity patrimonyEntity = PatrimonyMapper.toEntityFromUpdateOtherSituation(
+                findById(id),
+                dto,
+                unit,
+                request.getRequestURL().toString()
+        );
         verifyIfCanUpdatePatrimonyOtherSituation(patrimonyEntity);
-
-        patrimonyEntity.setSituacao(dto.getSituacao());
-        patrimonyEntity.setNumeroPatrimonio(dto.getNumeroPatrimonio());
-        patrimonyEntity.setDescricaoItemMaterial(dto.getDescricaoItemMaterial());
-        patrimonyEntity.setCodigoUnidadeResponsavel(unit.getCodigo());
-        patrimonyEntity.setNomeUnidadeResponsavel(unit.getNome());
-        patrimonyEntity.setCodigoUnidadeEncontrado(unit.getCodigo());
-        patrimonyEntity.setNomeUnidadeEncontrado(unit.getNome());
-
-        patrimonyEntity.setSgProjetoModificador(dto.getSgProjetoModificador());
-        patrimonyEntity.setSgAcaoModificadora(dto.getSgAcaoModificadora());
-        patrimonyEntity.setNoEndPointModificador(request.getRequestURL().toString());
 
         patrimonyRepository.save(patrimonyEntity);
         PatrimonyOtherSituationDTO patrimonyOtherSituation = patrimonyRepository.findOtherSituationById(id);
@@ -359,7 +353,7 @@ public class PatrimonyService {
         Long unitCode = dto.getCodigoUnidadeResponsavel();
         Long patrimonyNumber = dto.getNumeroPatrimonio();
 
-        inventoryControlService.verifyIfIsOpenById(inventoryId);
+        inventoryService.verifyIfIsOpenById(inventoryId);
         verifyIfExistsUnitByInventoryIdAndUnitNumber(inventoryId, unitCode);
 
         ResponseDTO<PatrimonyToBeLocalizedDTO> patrimonyInTheSameUnit = findPatrimonyInTheSameUnit(inventoryId, unitCode, patrimonyNumber);
@@ -387,7 +381,7 @@ public class PatrimonyService {
     public ResponseDTO<Void> localizePatrimony(Long id, UpdatePatrimonyObservationDTO dto) {
         PatrimonyEntity patrimonyEntity = findById(id);
 
-        inventoryControlService.verifyIfIsOpenById(patrimonyEntity.getInventario().getId());
+        inventoryService.verifyIfIsOpenById(patrimonyEntity.getInventario().getId());
 
         if (patrimonyEntity.getSituacao() == PatrimonySituationEnum.LOCALIZADO) {
             throw new ThisItemWasAlreadyLocatedException(patrimonyEntity.getNumeroPatrimonio());
