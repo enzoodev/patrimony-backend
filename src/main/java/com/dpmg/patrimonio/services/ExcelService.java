@@ -6,6 +6,7 @@ import com.dpmg.patrimonio.exceptions.WrongSheetNameException;
 import com.dpmg.patrimonio.models.dtos.shared.BaseAuditDTO;
 import com.dpmg.patrimonio.models.entities.InventoryControlEntity;
 import com.dpmg.patrimonio.models.entities.PatrimonyEntity;
+import com.dpmg.patrimonio.models.mappers.PatrimonyMapper;
 import com.dpmg.patrimonio.utils.SheetUtils;
 import lombok.Data;
 import org.apache.poi.ss.usermodel.Cell;
@@ -60,23 +61,6 @@ public class ExcelService {
         }
     }
 
-    private PatrimonyEntity createPatrimonyEntity(InventoryControlEntity inventory, BaseAuditDTO auditData, String requestURL) {
-        PatrimonyEntity patrimonyEntity = new PatrimonyEntity();
-
-        patrimonyEntity.setInventario(inventory);
-        patrimonyEntity.setIsOutraSituacao(false);
-        patrimonyEntity.setIsPatrimonioForaDaUnidade(false);
-        patrimonyEntity.setIsCadastroManual(false);
-        patrimonyEntity.setDescricaoItemMaterial("teste do enzo");
-
-        patrimonyEntity.setSgProjetoModificador(auditData.getSgProjetoModificador());
-        patrimonyEntity.setSgAcaoModificadora(auditData.getSgAcaoModificadora());
-        patrimonyEntity.setNoEndPointModificador(requestURL);
-        patrimonyEntity.setUuidUsuario("TESTE DO ENZO");
-
-        return patrimonyEntity;
-    }
-
     private XSSFSheet getSheetFromExcel(byte[] fileBytes) {
         try {
             InputStream inputStream = new ByteArrayInputStream(fileBytes);
@@ -117,7 +101,7 @@ public class ExcelService {
             Iterator<Cell> cellIterator = row.iterator();
             int cellIndex = 0;
 
-            PatrimonyEntity patrimonyEntity = createPatrimonyEntity(inventory, auditData, requestURL);
+            PatrimonyEntity patrimonyEntity = PatrimonyMapper.toEntity(inventory, auditData, requestURL);
 
             while (cellIterator.hasNext()) {
                 Cell cell = cellIterator.next();

@@ -10,6 +10,7 @@ import com.dpmg.patrimonio.models.dtos.shared.ResponseDTO;
 import com.dpmg.patrimonio.models.dtos.shared.BaseAuditDTO;
 import com.dpmg.patrimonio.models.entities.PatrimonyEntity;
 import com.dpmg.patrimonio.models.enums.PatrimonySituationEnum;
+import com.dpmg.patrimonio.models.mappers.PatrimonyMapper;
 import com.dpmg.patrimonio.repositories.PatrimonyRepository;
 import com.dpmg.patrimonio.utils.Messages;
 import jakarta.servlet.http.HttpServletRequest;
@@ -198,26 +199,9 @@ public class PatrimonyService {
         inventoryControlService.verifyIfIsOpenById(dto.getIdInventario());
         UnitDTO unit = findUnitByInventoryIdAndUnitNumber(dto.getIdInventario(), dto.getCodUnidadeResponsavel());
 
-        PatrimonyEntity patrimonyEntity = new PatrimonyEntity();
-
-        patrimonyEntity.setIsOutraSituacao(true);
-        patrimonyEntity.setIsCadastroManual(true);
-        patrimonyEntity.setSituacao(dto.getSituacao());
-        patrimonyEntity.setNumeroPatrimonio(dto.getNumeroPatrimonio());
-        patrimonyEntity.setDescricaoItemMaterial(dto.getDescricaoItemMaterial());
-        patrimonyEntity.setCodigoUnidadeResponsavel(unit.getCodigo());
-        patrimonyEntity.setNomeUnidadeResponsavel(unit.getNome());
-        patrimonyEntity.setCodigoUnidadeEncontrado(unit.getCodigo());
-        patrimonyEntity.setNomeUnidadeEncontrado(unit.getNome());
-
-        patrimonyEntity.setSgProjetoModificador(dto.getSgProjetoModificador());
-        patrimonyEntity.setSgAcaoModificadora(dto.getSgAcaoModificadora());
-        patrimonyEntity.setNoEndPointModificador(request.getRequestURL().toString());
-
-        // TODO: change it in the future
-        patrimonyEntity.setUuidUsuario("TESTE DO ENZO");
-
+        PatrimonyEntity patrimonyEntity = PatrimonyMapper.toEntityFromOtherSituation(dto, unit, request.getRequestURL().toString());
         patrimonyRepository.save(patrimonyEntity);
+
         PatrimonyOtherSituationDTO patrimonyOtherSituation = patrimonyRepository.findOtherSituationById(patrimonyEntity.getId());
 
         return new ResponseDTO<>(Messages.SUCCESS_CREATED_PATRIMONY, patrimonyOtherSituation);
