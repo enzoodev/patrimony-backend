@@ -61,7 +61,7 @@ public class PatrimonyController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/verificacao")
+    @GetMapping("/verificacao")
     public ResponseEntity<ResponseDTO<PatrimonyToBeLocalizedDTO>> verifyIfPatrimonyIsReadToBeLocalized(
             @Valid @RequestBody VerifyIfPatrimonyIsReadToBeLocalizedDTO dto
     ) {
